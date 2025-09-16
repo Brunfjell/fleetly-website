@@ -218,7 +218,7 @@ export const updateTripStatus = async (tripId, status, denyReason = null) => {
 
 export async function addTrip(trip) {
   const tripWithDefaults = {
-    status: "draft",
+    status: "requested",
     route: [],
     distance_travelled: 0,
     start_time: new Date(),
@@ -288,6 +288,46 @@ export const getMyExpenses = async (userId) => {
         reported_by:profiles!expenses_reported_by_fkey(id, name)
       `)
       .eq("reported_by", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Error fetching user expenses:", error);
+    throw error;
+  }
+};
+
+export const getEmployeeExpenses = async (userId) => {
+  try {
+    const { data: userTrips, error: tripsError } = await supabase
+      .from("trips")
+      .select("id")
+      .eq("requester_id", userId);
+
+    if (tripsError) throw tripsError;
+
+    const tripIds = userTrips?.map(trip => trip.id) || [];
+
+    const { data, error } = await supabase
+      .from("expenses")
+      .select(`
+        id,
+        type,
+        amount,
+        reason,
+        proof_url,
+        created_at,
+        updated_at,
+        trip_id,
+        reported_by,
+        trip:trips!expenses_trip_id_fkey (
+          id,
+          requester_id,
+          reason
+        )
+      `)
+      .or(`reported_by.eq.${userId}${tripIds.length > 0 ? `,trip_id.in.(${tripIds.join(',')})` : ''}`)
       .order("created_at", { ascending: false });
 
     if (error) throw error;

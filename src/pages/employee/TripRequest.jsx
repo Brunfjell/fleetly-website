@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import TripMap from "./TripMap";
 import { getDrivers, getVehicles, addTrip, addTripRoutePoint } from "../../api/api";
-import { MdFilterCenterFocus, MdDirectionsCar, MdPerson } from "react-icons/md";
+import { MdFilterCenterFocus, MdDirectionsCar, MdPerson, MdDescription } from "react-icons/md";
 import { FaRoute, FaPlus, FaTrash, FaSpinner } from "react-icons/fa";
 import { useOutletContext } from "react-router-dom";
 
@@ -37,6 +37,7 @@ export default function TripRequest() {
   const [vehicles, setVehicles] = useState([]);
   const [driverId, setDriverId] = useState("");
   const [vehicleId, setVehicleId] = useState("");
+  const [tripReason, setTripReason] = useState(""); // New state for trip reason
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { currentUserId } = useOutletContext();
@@ -81,6 +82,7 @@ export default function TripRequest() {
     setWaypoints([]);
     setDriverId("");
     setVehicleId("");
+    setTripReason(""); 
     setError("");
   };
 
@@ -123,6 +125,11 @@ export default function TripRequest() {
       return;
     }
 
+    if (!tripReason.trim()) {
+      setError("Please provide a reason for the trip.");
+      return;
+    }
+
     setLoading(true);
     setError("");
     try {
@@ -130,6 +137,7 @@ export default function TripRequest() {
         requester_id: currentUserId,
         driver_id: driverId,
         vehicle_id: vehicleId,
+        reason: tripReason.trim(), 
         status: "requested",
         distance_travelled: totalDistance,
       });
@@ -312,6 +320,27 @@ export default function TripRequest() {
               <div className="form-control mb-4">
                 <label className="label">
                   <span className="label-text font-semibold flex items-center">
+                    <MdDescription className="w-4 h-4 mr-2" />
+                    Trip Reason
+                  </span>
+                </label>
+                <textarea
+                  value={tripReason}
+                  onChange={(e) => setTripReason(e.target.value)}
+                  placeholder="Enter the purpose of this trip (e.g., client meeting, delivery, site visit)..."
+                  className="textarea textarea-bordered w-full h-24 focus:textarea-primary"
+                  rows={3}
+                />
+                <label className="label">
+                  <span className="label-text-alt text-base-content opacity-70">
+                    Please provide a clear reason for this trip request
+                  </span>
+                </label>
+              </div>
+
+              <div className="form-control mb-4">
+                <label className="label">
+                  <span className="label-text font-semibold flex items-center">
                     <MdPerson className="w-4 h-4 mr-2" />
                     Select Driver
                   </span>
@@ -362,7 +391,7 @@ export default function TripRequest() {
               <button
                 onClick={handleSubmit}
                 className="btn btn-primary w-full btn-lg shadow-md hover:shadow-lg transition-shadow"
-                disabled={loading || waypoints.length < 2 || !driverId || !vehicleId}
+                disabled={loading || waypoints.length < 2 || !driverId || !vehicleId || !tripReason.trim()}
               >
                 {loading ? (
                   <>
@@ -380,6 +409,11 @@ export default function TripRequest() {
               {waypoints.length < 2 && (
                 <p className="text-sm text-warning mt-2 text-center">
                   Add at least 2 waypoints to create a trip
+                </p>
+              )}
+              {!tripReason.trim() && (
+                <p className="text-sm text-warning mt-2 text-center">
+                  Please provide a reason for the trip
                 </p>
               )}
             </div>

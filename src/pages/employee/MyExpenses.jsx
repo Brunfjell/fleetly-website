@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { getMyExpenses } from "../../api/api";
+import { getEmployeeExpenses } from "../../api/api";
 import { useAuth } from "../../context/AuthContext";
 import DataTable from "../../components/DataTable";
 import { formatCurrency } from "../../utils/formatters";
@@ -20,7 +20,7 @@ export default function MyExpenses() {
         setLoading(true);
         setError(null);
         try {
-          const data = await getMyExpenses(user.id);
+          const data = await getEmployeeExpenses(user.id);
           setExpenses(data || []);
         } catch (err) {
           console.error("Failed to load expenses:", err);
@@ -36,7 +36,6 @@ export default function MyExpenses() {
   const filteredAndPaginatedExpenses = useMemo(() => {
     const filtered = expenses.filter(expense => 
       expense.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      expense.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       expense.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       formatCurrency(expense.amount)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       expense.amount?.toString().includes(searchTerm)
@@ -112,26 +111,11 @@ export default function MyExpenses() {
     );
   };
 
-  const getStatusBadge = (status) => {
-    const statusClasses = {
-      approved: "badge-success",
-      pending: "badge-warning",
-      denied: "badge-error",
-    };
-    
-    return (
-      <span className={`badge ${statusClasses[status] || 'badge-info'}`}>
-        {status}
-      </span>
-    );
-  };
-
-  const columns = ["Type", "Amount", "Reason", "Status"];
+  const columns = ["Type", "Amount", "Reason"];
   const rows = filteredAndPaginatedExpenses.paginated.map((e) => [
     e.type,
     <span className="font-bold text-primary">{formatCurrency(e.amount)}</span>,
     e.reason || "-",
-    getStatusBadge(e.status),
   ]);
 
   return (
@@ -152,7 +136,7 @@ export default function MyExpenses() {
               <FaSearch className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by type, reason, status, or amount..."
+                placeholder="Search by type, reason, or amount..."
                 value={searchTerm}
                 onChange={handleSearch}
                 className="input input-bordered w-full pl-10 focus:input-primary"

@@ -1,0 +1,53 @@
+src/
+├─ api/
+│  ├─ api.js             # All API calls in one place
+│  └─ supabaseClient.js  # Supabase client instance
+│
+├─ components/           # Reusable UI parts
+│  ├─ Navbar.jsx
+│  ├─ Sidebar.jsx
+│  ├─ DataTable.jsx
+│  ├─ TripCard.jsx
+│  ├─ ExpenseCard.jsx
+│  └─ RoleGuard.jsx      # Role-based wrapper
+│
+├─ context/
+│  └─ AuthContext.jsx    # Stores user, role, session
+│
+├─ layouts/
+│  ├─ AdminLayout.jsx
+│  ├─ DriverLayout.jsx
+│  └─ EmployeeLayout.jsx
+│
+├─ pages/
+│  ├─ auth/
+│  │  └─ Login.jsx		# Login only, registration will be the admins job
+│  │
+│  ├─ admin/
+│  │  ├─ Dashboard.jsx
+│  │  ├─ Employees.jsx		# here admin can view and then register or add new drivers or employees
+│  │  ├─ Vehicles.jsx
+│  │  ├─ Trips.jsx
+│  │  └─ Expenses.jsx		# Expenses only, this will be the Reports section
+│  │
+│  ├─ driver/
+│  │  ├─ TripInterface.jsx	# This will be default for driver
+│  │  ├─ MyTrips.jsx
+│  │  └─ MyExpenses.jsx
+│  │
+│  ├─ employee/
+│  │  ├─ TripRequest.jsx	# This will be default for employee
+│  │  ├─ MyTrips.jsx
+│  │  └─ MyExpenses.jsx
+│  │
+│  └─ shared/
+│     └─ Profile.jsx
+│
+├─ routes/
+│  └─ AppRoutes.jsx
+│
+├─ utils/
+│  ├─ roleUtils.js       # Role-based permissions
+│  └─ formatters.js      # Helpers
+├─ App.jsx
+└─ main.jsx

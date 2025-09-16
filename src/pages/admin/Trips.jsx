@@ -1,0 +1,491 @@
+import { useEffect, useState, useMemo } from "react";
+import TripCard from "../../components/TripCard";
+import Modal from "../../components/Modal";
+import { FaSearch, FaExclamationTriangle, FaInfoCircle, FaMapMarkerAlt, FaRoute, FaUserFriends, FaCar, FaCalendarAlt, FaClock } from "react-icons/fa";
+import { getTrips, updateTripStatus } from "../../api/api";
+
+export default function Trips() {
+  const [trips, setTrips] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [statusUpdating, setStatusUpdating] = useState(false);
+
+  const itemsPerPage = 6;
+
+  useEffect(() => {
+    const loadTrips = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data, error } = await getTrips({ id: null }, "admin");
+        if (error) throw error;
+        setTrips(data || []);
+      } catch (err) {
+        console.error("Failed to load trips:", err.message);
+        setError("Failed to load trips");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTrips();
+  }, []);
+
+  const filteredAndPaginatedTrips = useMemo(() => {
+    const filtered = trips.filter(trip => 
+      trip.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      trip.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      trip.vehicle?.plate_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      trip.driver?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      trip.requester?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      trip.status?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
+    
+    return { filtered, paginated };
+  }, [trips, searchTerm, currentPage]);
+
+  const totalPages = Math.ceil(filteredAndPaginatedTrips.filtered.length / itemsPerPage);
+
+  const handleView = (trip) => {
+    setSelectedTrip(trip);
+    setModalOpen(true);
+  };
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1); 
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handleApprove = async () => {
+    if (!selectedTrip) return;
+    setStatusUpdating(true);
+    try {
+      await updateTripStatus(selectedTrip.id, "approved");
+      setTrips(trips.map(t => t.id === selectedTrip.id ? { ...t, status: "approved" } : t));
+      setSelectedTrip({ ...selectedTrip, status: "approved" });
+    } catch (err) {
+      console.error("Failed to approve trip:", err);
+      alert("Failed to approve trip");
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
+
+  const handleDeny = async (reason) => {
+    if (!selectedTrip) return;
+    setStatusUpdating(true);
+    try {
+      await updateTripStatus(selectedTrip.id, "cancelled", reason);
+      setTrips(trips.map(t => t.id === selectedTrip.id ? { ...t, status: "cancelled", deny_reason: reason } : t));
+      setSelectedTrip({ ...selectedTrip, status: "cancelled", deny_reason: reason });
+    } catch (err) {
+      console.error("Failed to deny trip:", err);
+      alert("Failed to deny trip");
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <input
+          key={i}
+          className="join-item btn btn-square"
+          type="radio"
+          name="options"
+          aria-label={i.toString()}
+          checked={currentPage === i}
+          onChange={() => handlePageChange(i)}
+        />
+      );
+    }
+
+    return (
+      <div className="join">
+        {currentPage > 1 && (
+          <button
+            className="join-item btn btn-square"
+            onClick={() => handlePageChange(currentPage - 1)}
+          >
+            «
+          </button>
+        )}
+        {pages}
+        {currentPage < totalPages && (
+          <button
+            className="join-item btn btn-square"
+            onClick={() => handlePageChange(currentPage + 1)}
+          >
+            »
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  const tripStats = useMemo(() => {
+    const stats = {
+      total: trips.length,
+      requested: trips.filter(t => t.status === 'requested').length,
+      approved: trips.filter(t => t.status === 'approved').length,
+      active: trips.filter(t => t.status === 'active').length,
+      completed: trips.filter(t => t.status === 'completed').length,
+      cancelled: trips.filter(t => t.status === 'cancelled').length,
+    };
+    
+    return stats;
+  }, [trips]);
+
+  return (
+    <div className="min-h-[80vh] bg-base-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+          <h1 className="text-3xl font-bold text-base-content mb-4 sm:mb-0">
+            Trip Management
+          </h1>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+          <div className="stat bg-base-200 rounded-lg p-4 shadow-sm">
+            <div className="stat-figure text-primary">
+              <FaRoute className="w-6 h-6" />
+            </div>
+            <div className="stat-title">Total Trips</div>
+            <div className="stat-value text-primary text-lg">{tripStats.total}</div>
+          </div>
+
+          <div className="stat bg-base-200 rounded-lg p-4 shadow-sm">
+            <div className="stat-figure text-info">
+              <FaClock className="w-6 h-6" />
+            </div>
+            <div className="stat-title">Requested</div>
+            <div className="stat-value text-info text-lg">{tripStats.requested}</div>
+          </div>
+
+          <div className="stat bg-base-200 rounded-lg p-4 shadow-sm">
+            <div className="stat-figure text-success">
+              <FaCalendarAlt className="w-6 h-6" />
+            </div>
+            <div className="stat-title">Approved</div>
+            <div className="stat-value text-success text-lg">{tripStats.approved}</div>
+          </div>
+
+          <div className="stat bg-base-200 rounded-lg p-4 shadow-sm">
+            <div className="stat-figure text-warning">
+              <FaCar className="w-6 h-6" />
+            </div>
+            <div className="stat-title">Active</div>
+            <div className="stat-value text-warning text-lg">{tripStats.active}</div>
+          </div>
+
+          <div className="stat bg-base-200 rounded-lg p-4 shadow-sm">
+            <div className="stat-figure text-secondary">
+              <FaMapMarkerAlt className="w-6 h-6" />
+            </div>
+            <div className="stat-title">Completed</div>
+            <div className="stat-value text-secondary text-lg">{tripStats.completed}</div>
+          </div>
+
+          <div className="stat bg-base-200 rounded-lg p-4 shadow-sm">
+            <div className="stat-figure text-error">
+              <FaUserFriends className="w-6 h-6" />
+            </div>
+            <div className="stat-title">Cancelled</div>
+            <div className="stat-value text-error text-lg">{tripStats.cancelled}</div>
+          </div>
+        </div>
+
+        <div className="bg-base-200 rounded-lg shadow-sm p-4 sm:p-6 mb-6">
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text font-semibold">Search Trips</span>
+            </label>
+            <div className="relative">
+              <FaSearch className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by ID, reason, plate number, driver, requester, or status..."
+                value={searchTerm}
+                onChange={handleSearch}
+                className="input input-bordered w-full pl-10 focus:input-primary"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-base-200 rounded-lg shadow-sm p-4 sm:p-6">
+          {error && (
+            <div className="alert alert-error mb-6 shadow-lg">
+              <FaExclamationTriangle className="w-5 h-5" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <span className="loading loading-spinner loading-lg text-primary"></span>
+            </div>
+          ) : filteredAndPaginatedTrips.filtered.length === 0 ? (
+            <div className="text-center py-12">
+              <FaInfoCircle className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+              <p className="text-lg text-gray-600 font-medium mb-2">
+                {searchTerm ? "No trips match your search" : "No trips found"}
+              </p>
+              {searchTerm && (
+                <button
+                  className="btn btn-outline btn-sm"
+                  onClick={() => setSearchTerm("")}
+                >
+                  Clear Search
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="mb-4 text-sm text-base-content opacity-70">
+                Showing {filteredAndPaginatedTrips.paginated.length} of {filteredAndPaginatedTrips.filtered.length} trips
+                {searchTerm && ` matching "${searchTerm}"`}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                {filteredAndPaginatedTrips.paginated.map((trip) => (
+                  <TripCard
+                    key={trip.id}
+                    trip={trip}
+                    onView={() => handleView(trip)}
+                  />
+                ))}
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-8">
+                  {renderPagination()}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        <Modal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          title={selectedTrip ? `Trip Details: ${selectedTrip.reason || selectedTrip.id}` : ""}
+          size="max-w-4xl"
+        >
+          {selectedTrip && (
+            <div className="flex flex-col lg:flex-row gap-6 max-h-[70vh] overflow-y-auto">
+              <div className="flex-1 flex flex-col gap-6">
+                <section className="bg-base-200 p-4 rounded-lg">
+                  <h3 className="font-bold text-lg mb-4 text-primary flex items-center gap-2">
+                    <FaInfoCircle /> Trip Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="font-semibold text-sm">Status:</label>
+                      <div className="mt-1">
+                        <span className={`badge ${
+                          selectedTrip.status === 'completed' ? 'badge-success' :
+                          selectedTrip.status === 'approved' ? 'badge-success' :
+                          selectedTrip.status === 'active' ? 'badge-info' :
+                          selectedTrip.status === 'requested' ? 'badge-info' :
+                          selectedTrip.status === 'pending' ? 'badge-warning' :
+                          selectedTrip.status === 'cancelled' ? 'badge-error' :
+                          'badge-warning'
+                        }`}>
+                          {selectedTrip.status || "-"}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="font-semibold text-sm">ID:</label>
+                      <p className="mt-1 font-mono text-sm break-all">{selectedTrip.id || "-"}</p>
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label className="font-semibold text-sm">Reason:</label>
+                      <p className="mt-1 bg-base-100 p-2 rounded">{selectedTrip.reason || "-"}</p>
+                    </div>
+                    
+                    <div>
+                      <label className="font-semibold text-sm">Distance:</label>
+                      <p className="mt-1">{selectedTrip.distance_travelled ? `${selectedTrip.distance_travelled} km` : "-"}</p>
+                    </div>
+                    
+                    <div>
+                      <label className="font-semibold text-sm">Start Time:</label>
+                      <p className="mt-1 text-sm">{selectedTrip.start_time ? new Date(selectedTrip.start_time).toLocaleString() : "-"}</p>
+                    </div>
+                    
+                    <div>
+                      <label className="font-semibold text-sm">End Time:</label>
+                      <p className="mt-1 text-sm">{selectedTrip.end_time ? new Date(selectedTrip.end_time).toLocaleString() : "-"}</p>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="bg-base-200 p-4 rounded-lg">
+                  <h3 className="font-bold text-lg mb-4 text-primary flex items-center gap-2">
+                    <FaCar /> Vehicle Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="font-semibold text-sm">Plate Number:</label>
+                      <p className="mt-1">{selectedTrip.vehicle?.plate_number || "-"}</p>
+                    </div>
+                    
+                    <div>
+                      <label className="font-semibold text-sm">Make/Model:</label>
+                      <p className="mt-1">{selectedTrip.vehicle?.make || "-"} {selectedTrip.vehicle?.model || ""}</p>
+                    </div>
+                    
+                    <div>
+                      <label className="font-semibold text-sm">Year:</label>
+                      <p className="mt-1">{selectedTrip.vehicle?.year || "-"}</p>
+                    </div>
+                    
+                    <div>
+                      <label className="font-semibold text-sm">Odometer:</label>
+                      <p className="mt-1">{selectedTrip.vehicle?.odometer ? `${selectedTrip.vehicle.odometer} km` : "-"}</p>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="bg-base-200 p-4 rounded-lg">
+                  <h3 className="font-bold text-lg mb-4 text-primary flex items-center gap-2">
+                    <FaUserFriends /> People Involved
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="font-semibold text-sm">Driver:</label>
+                      <p className="mt-1">{selectedTrip.driver?.name || "-"}</p>
+                    </div>
+                    
+                    <div>
+                      <label className="font-semibold text-sm">Requester:</label>
+                      <p className="mt-1">{selectedTrip.requester?.name || "-"}</p>
+                    </div>
+                    
+                    <div>
+                      <label className="font-semibold text-sm">Approver:</label>
+                      <p className="mt-1">{selectedTrip.approver?.name || "-"}</p>
+                    </div>
+                    
+                    {selectedTrip.deny_reason && (
+                      <div className="md:col-span-2">
+                        <label className="font-semibold text-sm">Deny Reason:</label>
+                        <p className="mt-1 text-error bg-base-100 p-2 rounded">{selectedTrip.deny_reason}</p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                {selectedTrip.route_points?.length > 0 && (
+                  <section className="bg-base-200 p-4 rounded-lg">
+                    <h3 className="font-bold text-lg mb-4 text-primary flex items-center gap-2">
+                      <FaMapMarkerAlt /> Route Points
+                    </h3>
+                    <div className="space-y-3 max-h-60 overflow-y-auto">
+                      {selectedTrip.route_points.map((p, index) => (
+                        <div key={p.id} className="bg-base-100 p-3 rounded-lg">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <p className="font-medium">{p.name || `Point ${index + 1}`}</p>
+                              <p className="text-sm opacity-70 mt-1">({p.lat}, {p.lng})</p>
+                              {p.point_time && (
+                                <p className="text-xs opacity-70 mt-1">
+                                  {new Date(p.point_time).toLocaleString()}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex gap-2 ml-2">
+                              {p.is_start && <span className="badge badge-success badge-sm">Start</span>}
+                              {p.is_destination && <span className="badge badge-info badge-sm">Destination</span>}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {selectedTrip.route_events?.length > 0 && (
+                  <section className="bg-base-200 p-4 rounded-lg">
+                    <h3 className="font-bold text-lg mb-4 text-primary flex items-center gap-2">
+                      <FaRoute /> Route Events
+                    </h3>
+                    <div className="space-y-3 max-h-60 overflow-y-auto">
+                      {selectedTrip.route_events.map((e) => (
+                        <div key={e.id} className="bg-base-100 p-3 rounded-lg">
+                          <p className="font-medium">Moved by {e.moved_by?.name || e.moved_by}</p>
+                          <div className="grid grid-cols-2 gap-2 text-sm mt-2">
+                            <div>
+                              <label className="font-semibold text-xs">From:</label>
+                              <p>({e.old_lat}, {e.old_lng})</p>
+                            </div>
+                            <div>
+                              <label className="font-semibold text-xs">To:</label>
+                              <p>({e.new_lat}, {e.new_lng})</p>
+                            </div>
+                          </div>
+                          <p className="text-xs opacity-70 mt-2">
+                            {new Date(e.moved_at).toLocaleString()}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </div>
+            </div>
+          )}
+
+          {selectedTrip && selectedTrip.status === "requested" && (
+            <div className="flex gap-4 mt-6 pt-4 border-t border-base-300">
+              <button
+                className={`btn btn-success ${statusUpdating ? "loading" : ""}`}
+                onClick={handleApprove}
+                disabled={statusUpdating}
+              >
+                Approve
+              </button>
+              <button
+                className={`btn btn-error ${statusUpdating ? "loading" : ""}`}
+                onClick={() => {
+                  const reason = prompt("Enter reason for denial:");
+                  if (reason) handleDeny(reason);
+                }}
+                disabled={statusUpdating}
+              >
+                Deny
+              </button>
+            </div>
+          )}
+        </Modal>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,67 @@
+async function seedUsers() {
+  const users = [
+    {
+      email: "admin1@fleetly.com",
+      phone: "+639171111111",
+      password: "AdminPass123!",
+      user_metadata: { display_name: "Admin One", role: "admin" },
+    },
+    {
+      email: "admin2@fleetly.com",
+      phone: "+639171111112",
+      password: "AdminPass123!",
+      user_metadata: { display_name: "Admin Two", role: "admin" },
+    },
+
+    // Drivers
+    {
+      email: "driver1@fleetly.com",
+      phone: "+639172222221",
+      password: "DriverPass123!",
+      user_metadata: { display_name: "Driver One", role: "driver" },
+    },
+    {
+      email: "driver2@fleetly.com",
+      phone: "+639172222222",
+      password: "DriverPass123!",
+      user_metadata: { display_name: "Driver Two", role: "driver" },
+    },
+    {
+      email: "driver3@fleetly.com",
+      phone: "+639172222223",
+      password: "DriverPass123!",
+      user_metadata: { display_name: "Driver Three", role: "driver" },
+    },
+
+    {
+      email: "employee1@fleetly.com",
+      phone: "+639173333331",
+      password: "EmployeePass123!",
+      user_metadata: { display_name: "Employee One", role: "employee" },
+    },
+    {
+      email: "employee2@fleetly.com",
+      phone: "+639173333332",
+      password: "EmployeePass123!",
+      user_metadata: { display_name: "Employee Two", role: "employee" },
+    },
+    {
+      email: "employee3@fleetly.com",
+      phone: "+639173333333",
+      password: "EmployeePass123!",
+      user_metadata: { display_name: "Employee Three", role: "employee" },
+    },
+    {
+      email: "employee4@fleetly.com",
+      phone: "+639173333334",
+      password: "EmployeePass123!",
+      user_metadata: { display_name: "Employee Four", role: "employee" },
+    },
+    {
+      email: "employee5@fleetly.com",
+      phone: "+639173333335",
+      password: "EmployeePass123!",
+      user_metadata: { display_name: "Employee Five", role: "employee" },
+    },
+  ];
+}

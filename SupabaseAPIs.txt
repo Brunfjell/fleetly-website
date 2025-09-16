@@ -1,0 +1,285 @@
+// api.js
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = 'https://your-project.supabase.co';
+const SUPABASE_ANON_KEY = 'your-anon-key';
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/** --------------------
+ * PROFILES
+ * -------------------- */
+
+// Get current user profile
+export async function getMyProfile() {
+  const userId = supabase.auth.getUser()?.data?.user?.id;
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// Admin: fetch all profiles
+export async function getAllProfiles() {
+  const { data, error } = await supabase.from('profiles').select('*');
+  if (error) throw error;
+  return data;
+}
+
+// Update own profile
+export async function updateMyProfile(updates) {
+  const userId = supabase.auth.getUser()?.data?.user?.id;
+  const { data, error } = await supabase.from('profiles').update(updates).eq('id', userId);
+  if (error) throw error;
+  return data;
+}
+
+/** --------------------
+ * VEHICLES
+ * -------------------- */
+
+// Get all vehicles
+export async function getVehicles() {
+  const { data, error } = await supabase.from('vehicles').select('*');
+  if (error) throw error;
+  return data;
+}
+
+// Add vehicle (admin)
+export async function addVehicle(vehicle) {
+  const { data, error } = await supabase.from('vehicles').insert([vehicle]);
+  if (error) throw error;
+  return data;
+}
+
+// Update vehicle (admin)
+export async function updateVehicle(id, updates) {
+  const { data, error } = await supabase.from('vehicles').update(updates).eq('id', id);
+  if (error) throw error;
+  return data;
+}
+
+// Delete vehicle (admin)
+export async function deleteVehicle(id) {
+  const { data, error } = await supabase.from('vehicles').delete().eq('id', id);
+  if (error) throw error;
+  return data;
+}
+
+/** --------------------
+ * TRIPS
+ * -------------------- */
+
+// Get trips (filtered by RLS)
+export async function getTrips() {
+  const { data, error } = await supabase.from('trips').select('*');
+  if (error) throw error;
+  return data;
+}
+
+// Create trip (employee)
+export async function createTrip(trip) {
+  const { data, error } = await supabase.from('trips').insert([trip]);
+  if (error) throw error;
+  return data;
+}
+
+// Update trip (admin: approve/deny, driver: start/end)
+export async function updateTrip(id, updates) {
+  const { data, error } = await supabase.from('trips').update(updates).eq('id', id);
+  if (error) throw error;
+  return data;
+}
+
+// Delete trip (admin)
+export async function deleteTrip(id) {
+  const { data, error } = await supabase.from('trips').delete().eq('id', id);
+  if (error) throw error;
+  return data;
+}
+
+/** --------------------
+ * TRIP ROUTE POINTS
+ * -------------------- */
+
+// Get route points for a trip
+export async function getRoutePoints(tripId) {
+  const { data, error } = await supabase.from('trip_route_points').select('*').eq('trip_id', tripId);
+  if (error) throw error;
+  return data;
+}
+
+// Add route point
+export async function addRoutePoint(point) {
+  const { data, error } = await supabase.from('trip_route_points').insert([point]);
+  if (error) throw error;
+  return data;
+}
+
+// Update route point
+export async function updateRoutePoint(id, updates) {
+  const { data, error } = await supabase.from('trip_route_points').update(updates).eq('id', id);
+  if (error) throw error;
+  return data;
+}
+
+// Delete route point
+export async function deleteRoutePoint(id) {
+  const { data, error } = await supabase.from('trip_route_points').delete().eq('id', id);
+  if (error) throw error;
+  return data;
+}
+
+/** --------------------
+ * EXPENSES
+ * -------------------- */
+
+// Get expenses (filtered by RLS)
+export async function getExpenses() {
+  const { data, error } = await supabase.from('expenses').select('*');
+  if (error) throw error;
+  return data;
+}
+
+// Report expense
+export async function addExpense(expense) {
+  const { data, error } = await supabase.from('expenses').insert([expense]);
+  if (error) throw error;
+  return data;
+}
+
+// Update expense
+export async function updateExpense(id, updates) {
+  const { data, error } = await supabase.from('expenses').update(updates).eq('id', id);
+  if (error) throw error;
+  return data;
+}
+
+// Delete expense
+export async function deleteExpense(id) {
+  const { data, error } = await supabase.from('expenses').delete().eq('id', id);
+  if (error) throw error;
+  return data;
+}
+
+/** --------------------
+ * FILES
+ * -------------------- */
+
+// Get files for an expense
+export async function getFiles(expenseId) {
+  const { data, error } = await supabase.from('files').select('*').eq('expense_id', expenseId);
+  if (error) throw error;
+  return data;
+}
+
+// Add file
+export async function addFile(file) {
+  const { data, error } = await supabase.from('files').insert([file]);
+  if (error) throw error;
+  return data;
+}
+
+// Update file
+export async function updateFile(id, updates) {
+  const { data, error } = await supabase.from('files').update(updates).eq('id', id);
+  if (error) throw error;
+  return data;
+}
+
+// Delete file
+export async function deleteFile(id) {
+  const { data, error } = await supabase.from('files').delete().eq('id', id);
+  if (error) throw error;
+  return data;
+}
+
+/** --------------------
+ * ROUTE EVENTS
+ * -------------------- */
+
+export async function getRouteEvents(tripId) {
+  const { data, error } = await supabase.from('route_events').select('*').eq('trip_id', tripId);
+  if (error) throw error;
+  return data;
+}
+
+export async function addRouteEvent(event) {
+  const { data, error } = await supabase.from('route_events').insert([event]);
+  if (error) throw error;
+  return data;
+}
+
+/** --------------------
+ * SYNC QUEUE
+ * -------------------- */
+
+export async function getSyncQueue() {
+  const { data, error } = await supabase.from('sync_queue').select('*');
+  if (error) throw error;
+  return data;
+}
+
+export async function addSyncQueue(item) {
+  const { data, error } = await supabase.from('sync_queue').insert([item]);
+  if (error) throw error;
+  return data;
+}
+
+export async function updateSyncQueue(id, updates) {
+  const { data, error } = await supabase.from('sync_queue').update(updates).eq('id', id);
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteSyncQueue(id) {
+  const { data, error } = await supabase.from('sync_queue').delete().eq('id', id);
+  if (error) throw error;
+  return data;
+}
+
+/** --------------------
+ * STORAGE (FILES)
+ * -------------------- */
+
+/**
+ * Upload a file to Supabase Storage
+ * @param {File} file - JS File object
+ * @param {string} folder - subfolder in 'receipts' (e.g., 'fuel', 'toll')
+ * @param {string} filename - desired filename
+ */
+export async function uploadReceipt(file, folder, filename) {
+  const filePath = `${folder}/${filename}`;
+  const { data, error } = await supabase.storage
+    .from('receipts')
+    .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+  if (error) throw error;
+
+  // Get public URL (or use signed URL)
+  const { publicUrl, error: urlError } = supabase.storage.from('receipts').getPublicUrl(filePath);
+  if (urlError) throw urlError;
+
+  return { storage_path: filePath, url: publicUrl };
+}
+
+/**
+ * Download a file (returns a Blob)
+ */
+export async function downloadReceipt(filePath) {
+  const { data, error } = await supabase.storage.from('receipts').download(filePath);
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Delete a file from storage
+ */
+export async function deleteReceipt(filePath) {
+  const { data, error } = await supabase.storage.from('receipts').remove([filePath]);
+  if (error) throw error;
+  return data;
+}

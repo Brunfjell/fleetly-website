@@ -278,6 +278,21 @@ export async function getExpenses(filter = {}) {
   return { data, error };
 }
 
+export async function getExpensesSum(filter = {}) {
+  let query = supabase
+    .from("expenses")
+    .select("amount", { count: "exact" }); 
+
+  if (filter.tripId) query = query.eq("trip_id", filter.tripId);
+  if (filter.reportedBy) query = query.eq("reported_by", filter.reportedBy);
+
+  const { data, error } = await query;
+
+  const total = data?.reduce((acc, exp) => acc + parseFloat(exp.amount || 0), 0) || 0;
+
+  return { total, error };
+}
+
 export const getMyExpenses = async (userId) => {
   try {
     const { data, error } = await supabase

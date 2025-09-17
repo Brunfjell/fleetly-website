@@ -23,8 +23,6 @@ import TripRequest from "../pages/employee/TripRequest";
 import EmployeeTrips from "../pages/employee/MyTrips";
 import EmployeeExpenses from "../pages/employee/MyExpenses";
 
-import Profile from "../pages/shared/Profile";
-
 export default function AppRoutes() {
   const { user, role, loading } = useAuth();
 
@@ -38,7 +36,7 @@ export default function AppRoutes() {
   }
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/fleetly-website">
       <Routes>
         <Route
           path="/auth/login"
@@ -86,8 +84,6 @@ export default function AppRoutes() {
           <Route path="expenses" element={<EmployeeExpenses />} />
         </Route>
 
-        <Route path="/profile" element={<Profile />} />
-
         <Route
           path="/"
           element={
@@ -105,7 +101,6 @@ export default function AppRoutes() {
           }
         />
 
-        {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

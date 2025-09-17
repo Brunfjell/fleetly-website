@@ -5,6 +5,7 @@ import ThemeToggle from "../components/ThemeToggle";
 import { useState } from "react";
 import { FiMenu } from "react-icons/fi";
 import { ROLES } from "../utils/roleUtils";
+import { Footer } from "../components/Footer";
 
 export default function AdminLayout() {
   const { role, logout } = useAuth();
@@ -22,7 +23,7 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="drawer drawer-mobile h-screen">
+    <><div className="drawer drawer-mobile h-screen">
       <input id="admin-drawer" type="checkbox" className="drawer-toggle" />
       <div className="drawer-content flex flex-col">
         <div className="navbar bg-base-100 shadow-2xl w-full">
@@ -48,11 +49,7 @@ export default function AdminLayout() {
                   <NavLink
                     to={item.to}
                     end={item.end || false}
-                    className={({ isActive }) =>
-                      `rounded px-2 py-1 ${
-                        isActive ? "bg-primary text-primary-content" : ""
-                      }`
-                    }
+                    className={({ isActive }) => `rounded px-2 py-1 ${isActive ? "bg-primary text-primary-content" : ""}`}
                   >
                     {item.label}
                   </NavLink>
@@ -93,7 +90,7 @@ export default function AdminLayout() {
                 onClick={() => {
                   setShowLogoutModal(false);
                   logout();
-                }}
+                } }
               >
                 Logout
               </button>
@@ -101,6 +98,6 @@ export default function AdminLayout() {
           </div>
         </dialog>
       )}
-    </div>
+    </div><Footer /></>
   );
 }

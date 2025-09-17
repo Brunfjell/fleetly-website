@@ -43,64 +43,63 @@ export default function MyTrips() {
   const { user } = useAuth();
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [destModalOpen, setDestModalOpen] = useState(false);
-  const [selectedTrip, setSelectedTrip] = useState(null);
+
+  // Filters
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
+  const [modalOpen, setModalOpen] = useState(false);
+  const [destModalOpen, setDestModalOpen] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState(null);
+
   useEffect(() => {
-    if (user) {
-      setLoading(true);
-      getMyTrips(user.id)
-        .then((data) => setTrips(data))
-        .catch(() => console.error("Failed to load trips"))
-        .finally(() => setLoading(false));
-    }
+    if (!user) return;
+    setLoading(true);
+    getMyTrips(user.id)
+      .then((data) => setTrips(data))
+      .catch(() => console.error("Failed to load trips"))
+      .finally(() => setLoading(false));
   }, [user]);
 
   const filteredAndPaginatedTrips = useMemo(() => {
-    const filtered = trips.filter((trip) => {
+    let filtered = trips.filter((trip) => {
       const lastDest = trip.destinations?.[trip.destinations.length - 1]?.name || "";
-      return (
+      const matchesSearch =
         lastDest.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (trip.status?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
         (trip.reason?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
         (trip.vehicle?.plate_number?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
         (trip.driver?.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-        formatDateSafe(trip.start_time).toLowerCase().includes(searchTerm.toLowerCase())
-      );
+        formatDateSafe(trip.start_time).toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesStatus = statusFilter === "all" || trip.status === statusFilter;
+
+      const tripDate = trip.start_time ? new Date(trip.start_time) : null;
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+      const matchesDate = (!start || (tripDate && tripDate >= start)) && (!end || (tripDate && tripDate <= end));
+
+      return matchesSearch && matchesStatus && matchesDate;
     });
 
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
-
-    return { filtered, paginated };
-  }, [trips, searchTerm, currentPage]);
+    return { filtered, paginated: filtered.slice(startIndex, startIndex + itemsPerPage) };
+  }, [trips, searchTerm, statusFilter, startDate, endDate, currentPage]);
 
   const totalPages = Math.ceil(filteredAndPaginatedTrips.filtered.length / itemsPerPage);
 
-  const handleView = (trip) => {
-    setSelectedTrip(trip);
-    setModalOpen(true);
-  };
-
-  const handleDestinations = (trip) => {
-    setSelectedTrip(trip);
-    setDestModalOpen(true);
-  };
-
-  const clearSearch = () => setSearchTerm("");
+  const handleView = (trip) => { setSelectedTrip(trip); setModalOpen(true); };
+  const handleDestinations = (trip) => { setSelectedTrip(trip); setDestModalOpen(true); };
+  const clearFilters = () => { setSearchTerm(""); setStatusFilter("all"); setStartDate(""); setEndDate(""); setCurrentPage(1); };
   const handlePageChange = (page) => setCurrentPage(page);
 
   const getStatusBadge = (status) => {
-    const classes = {
-      completed: "badge-success",
-      active: "badge-info",
-      pending: "badge-warning",
-      cancelled: "badge-error",
-    };
+    const classes = { completed: "badge-success", active: "badge-info", in_progress: "badge-warning", cancelled: "badge-error" };
     return <span className={`badge ${classes[status] || "badge-info"}`}>{status}</span>;
   };
 
@@ -110,125 +109,65 @@ export default function MyTrips() {
     date: formatDateSafe(t.start_time),
     destination: t.destinations?.[t.destinations.length - 1]?.name || "-",
     status: getStatusBadge(t.status),
-    tripObject: t, 
+    tripObject: t,
   }));
 
   return (
     <div className="min-h-[80vh] bg-base-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <h1 className="text-3xl font-bold text-base-content mb-6">My Trips</h1>
+        <h1 className="text-3xl font-bold mb-6">My Trips</h1>
 
-        <div className="bg-base-200 rounded-lg shadow-sm p-4 sm:p-6 mb-6">
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text font-semibold">Search My Trips</span>
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search by destination, status, reason, vehicle, or date..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="input input-bordered w-full pl-3 focus:input-primary"
-              />
-              {searchTerm && (
-                <button
-                  onClick={clearSearch}
-                  className="absolute right-2 top-2 text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          </div>
+        <div className="bg-base-200 rounded-lg shadow-sm p-4 sm:p-6 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+          <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="input input-bordered w-full"/>
+          
+          <select className="select select-bordered" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}>
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+            <option value="in_progress">In Progress</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+
+          <input type="date" className="input input-bordered" value={startDate} onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }} placeholder="Start Date"/>
+          <input type="date" className="input input-bordered" value={endDate} onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }} placeholder="End Date"/>
         </div>
 
         <div className="bg-base-200 rounded-lg shadow-sm p-4 sm:p-6">
           {loading ? (
-            <div className="flex justify-center py-12">
-              <span className="loading loading-spinner loading-lg text-primary"></span>
-            </div>
+            <div className="flex justify-center py-12"><span className="loading loading-spinner loading-lg text-primary"></span></div>
           ) : trips.length === 0 ? (
-            <div className="text-center py-12">
-              <FaRoute className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-lg text-gray-600 font-medium mb-4">No trips found</p>
-            </div>
+            <div className="text-center py-12"><FaRoute className="w-16 h-16 mx-auto text-gray-400 mb-4"/><p>No trips found</p></div>
           ) : filteredAndPaginatedTrips.filtered.length === 0 ? (
-            <div className="text-center py-12">
-              <FaRoute className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-lg text-gray-600 font-medium mb-4">No trips match your search</p>
-              <button className="btn btn-outline" onClick={clearSearch}>
-                Clear Search
-              </button>
-            </div>
+            <div className="text-center py-12"><FaRoute className="w-16 h-16 mx-auto text-gray-400 mb-4"/><p>No trips match your filters</p><button className="btn btn-outline mt-4" onClick={clearFilters}>Clear Filters</button></div>
           ) : (
-            <DataTable
-              columns={columns}
-              data={rows}
-              actions={[
-                {
-                  label: "View",
-                  className: "btn btn-sm btn-primary",
-                  onClick: (row) => handleView(row.tripObject),
-                },
-                {
-                  label: "Destinations",
-                  className: "btn btn-sm btn-info",
-                  onClick: (row) => handleDestinations(row.tripObject),
-                },
-              ]}
-            />
+            <>
+              <DataTable columns={columns} data={rows} actions={[
+                { label: "View", className: "btn btn-sm btn-primary", onClick: (row) => handleView(row.tripObject) },
+                { label: "Destinations", className: "btn btn-sm btn-info", onClick: (row) => handleDestinations(row.tripObject) },
+              ]}/>
+            </>
           )}
         </div>
 
-        <Modal
-          isOpen={modalOpen}
-          onClose={() => setModalOpen(false)}
-          title="Trip Details"
-          size="lg"
-          footer={
-            <button className="btn btn-outline" onClick={() => setModalOpen(false)}>
-              Close
-            </button>
-          }
-        >
+        <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Trip Details" size="lg" footer={<button className="btn btn-outline" onClick={() => setModalOpen(false)}>Close</button>}>
           {selectedTrip && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="font-bold text-lg mb-3 text-primary">Trip Information</h3>
-                  <p>
-                    <strong>Date:</strong> {formatDateSafe(selectedTrip.start_time)}
-                  </p>
-                  <p>
-                    <strong>Status:</strong> {getStatusBadge(selectedTrip.status)}
-                  </p>
-                  <p>
-                    <strong>Reason:</strong> {selectedTrip.reason || "No reason provided"}
-                  </p>
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg mb-3 text-primary">Location & Vehicle</h3>
-                  <p>
-                    <strong>Vehicle:</strong> {selectedTrip.vehicle?.plate_number || "-"}
-                  </p>
-                  <p>
-                    <strong>Driver:</strong> {selectedTrip.driver?.name || "-"}
-                  </p>
-                </div>
+            <div className="space-y-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="font-bold text-lg mb-3 text-primary">Trip Info</h3>
+                <p><strong>Date:</strong> {formatDateSafe(selectedTrip.start_time)}</p>
+                <p><strong>Status:</strong> {getStatusBadge(selectedTrip.status)}</p>
+                <p><strong>Reason:</strong> {selectedTrip.reason || "-"}</p>
+              </div>
+              <div>
+                <h3 className="font-bold text-lg mb-3 text-primary">Location & Vehicle</h3>
+                <p><strong>Vehicle:</strong> {selectedTrip.vehicle?.plate_number || "-"}</p>
+                <p><strong>Driver:</strong> {selectedTrip.driver?.name || "-"}</p>
               </div>
             </div>
           )}
         </Modal>
 
-        <DestinationsModal
-          isOpen={destModalOpen}
-          onClose={() => setDestModalOpen(false)}
-          destinations={selectedTrip?.destinations}
-        />
+        <DestinationsModal isOpen={destModalOpen} onClose={() => setDestModalOpen(false)} destinations={selectedTrip?.destinations} />
       </div>
     </div>
   );

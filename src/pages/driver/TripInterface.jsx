@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getMyTrips, cancelTrip } from "../../api/api";
+import { getMyTrips, cancelTrip, updateTripStatus } from "../../api/api";
 import { useAuth } from "../../context/AuthContext";
 import TripCardN from "../../components/TripCardN";
 import ActiveTrip from "./ActiveTrip";
@@ -11,9 +11,7 @@ export default function TripInterface() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      loadTrips();
-    }
+    if (user) loadTrips();
   }, [user]);
 
   const loadTrips = async () => {
@@ -43,6 +41,27 @@ export default function TripInterface() {
     setTrips((prev) => prev.filter((t) => t.id !== tripId));
   };
 
+  const handleStart = async (trip) => {
+    if (trip.status === "approved") {
+      try {
+        const { error } = await updateTripStatus(trip.id, "in_progress");
+        if (error) throw error;
+
+        setTrips((prev) =>
+          prev.map((t) =>
+            t.id === trip.id ? { ...t, status: "in_progress" } : t
+          )
+        );
+      } catch (err) {
+        console.error("Failed to update trip status:", err);
+        alert("Failed to start trip.");
+        return;
+      }
+    }
+
+    setActiveTrip(trip);
+  };
+
   if (activeTrip) {
     return (
       <ActiveTrip
@@ -58,41 +77,43 @@ export default function TripInterface() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="min-h-[80vh] bg-base-200 p-6 space-y-6 rounded-lg">
+      <div className="min-h-[80vh]">
         <h1 className="text-3xl font-bold text-center md:text-left">
           My Assigned Trips
         </h1>
 
-        {loading ? (
-          <div className="flex justify-center items-center h-40">
-            <span className="loading loading-spinner loading-lg text-primary"></span>
-          </div>
-        ) : trips.length === 0 ? (
-          <div className="alert alert-info shadow">
-            <span>No trips assigned yet.</span>
-          </div>
-        ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {trips.map((trip) => {
-              const startLabel =
-                trip.status === "approved"
-                  ? "Start"
-                  : trip.status === "in_progress"
-                  ? "Continue"
-                  : "";
+        <div className="bg-base-200 mt-6 p-6 space-y-6 rounded-lg">
+          {loading ? (
+            <div className="flex justify-center items-center h-40">
+              <span className="loading loading-spinner loading-lg text-primary"></span>
+            </div>
+          ) : trips.length === 0 ? (
+            <div className="alert alert-info shadow">
+              <span>No trips assigned yet.</span>
+            </div>
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {trips.map((trip) => {
+                const startLabel =
+                  trip.status === "approved"
+                    ? "Start"
+                    : trip.status === "in_progress"
+                    ? "Continue"
+                    : "";
 
-              return (
-                <TripCardN
-                  key={trip.id}
-                  trip={trip}
-                  startLabel={startLabel}
-                  onStart={() => setActiveTrip(trip)}
-                  onCancel={() => handleCancel(trip.id)}
-                />
-              );
-            })}
-          </div>
-        )}
+                return (
+                  <TripCardN
+                    key={trip.id}
+                    trip={trip}
+                    startLabel={startLabel}
+                    onStart={() => handleStart(trip)}
+                    onCancel={() => handleCancel(trip.id)}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

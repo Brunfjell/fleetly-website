@@ -61,11 +61,11 @@ export default function Destinations({ destinations, addStop, setDestinations })
         </ul>
       )}
 
-      <ul className="list-disc ml-4">
+      <ul className="list-disc ml-4 gap-4 space-y-2 max-h-48 overflow-y-auto">
         {destinations.map((d) => (
-          <li key={d.id} className="flex justify-between items-center">
+          <li key={d.id} className="flex justify-between items-center bg-base-200 p-1 rounded">
             <span>
-              {d.name} ({d.lat.toFixed(4)}, {d.lng.toFixed(4)})
+              {d.name} <br /> <strong>({d.lat.toFixed(4)}, {d.lng.toFixed(4)})</strong>
             </span>
             <button
               className="btn btn-ghost btn-xs text-error"

@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import ThemeToggle from "../components/ThemeToggle";
 import { useState } from "react";
 import { FiMenu } from "react-icons/fi";
+import { Footer } from "../components/Footer";
 
 export default function DriverLayout() {
   const { role, logout } = useAuth();
@@ -16,7 +17,7 @@ export default function DriverLayout() {
   ];
 
   return (
-    <div className="drawer drawer-mobile h-screen">
+    <><div className="drawer drawer-mobile h-screen">
       <input id="driver-drawer" type="checkbox" className="drawer-toggle" />
       <div className="drawer-content flex flex-col">
         <div className="navbar bg-base-100 shadow-2xl w-full">
@@ -42,11 +43,7 @@ export default function DriverLayout() {
                   <NavLink
                     to={item.to}
                     end={item.end || false}
-                    className={({ isActive }) =>
-                      `rounded px-2 py-1 ${
-                        isActive ? "bg-primary text-primary-content" : ""
-                      }`
-                    }
+                    className={({ isActive }) => `rounded px-2 py-1 ${isActive ? "bg-primary text-primary-content" : ""}`}
                   >
                     {item.label}
                   </NavLink>
@@ -73,7 +70,6 @@ export default function DriverLayout() {
         <Sidebar role={role} />
       </div>
 
-      {/* Logout Modal */}
       {showLogoutModal && (
         <dialog open className="modal">
           <div className="modal-box">
@@ -88,7 +84,7 @@ export default function DriverLayout() {
                 onClick={() => {
                   setShowLogoutModal(false);
                   logout();
-                }}
+                } }
               >
                 Logout
               </button>
@@ -96,6 +92,6 @@ export default function DriverLayout() {
           </div>
         </dialog>
       )}
-    </div>
+    </div><Footer /></>
   );
 }

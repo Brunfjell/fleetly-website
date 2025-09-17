@@ -1,9 +1,9 @@
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from "react-leaflet";
 import { useEffect } from "react";
-import "leaflet/dist/leaflet.css";
-import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
 import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import "leaflet-routing-machine";
+import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -24,11 +24,10 @@ function LocationMarker({ onAddDestination }) {
           `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
         );
         const data = await res.json();
-        const placeName = data.display_name || `Lat: ${lat}, Lng: ${lng}`;
+        const placeName = data.display_name || `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
         onAddDestination({ lat, lng, name: placeName });
-      } catch (err) {
-        console.error("Reverse geocode failed:", err);
-        onAddDestination({ lat, lng, name: `Lat: ${lat}, Lng: ${lng}` });
+      } catch {
+        onAddDestination({ lat, lng, name: `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}` });
       }
     },
   });
@@ -40,19 +39,17 @@ function Routing({ destinations }) {
 
   useEffect(() => {
     if (!map) return;
-    let routingControl;
+    if (destinations.length < 2) return;
 
-    if (destinations.length > 1) {
-      routingControl = L.Routing.control({
-        waypoints: destinations.map((d) => L.latLng(d.lat, d.lng)),
-        lineOptions: { styles: [{ color: "blue", weight: 4 }] },
-        show: false,
-        addWaypoints: false,
-        routeWhileDragging: false,
-        draggableWaypoints: false,
-        createMarker: () => null,
-      }).addTo(map);
-    }
+    const routingControl = L.Routing.control({
+      waypoints: destinations.map((d) => L.latLng(d.lat, d.lng)),
+      lineOptions: { styles: [{ color: "blue", weight: 4 }] },
+      show: false,
+      addWaypoints: false,
+      routeWhileDragging: false,
+      draggableWaypoints: false,
+      createMarker: () => null,
+    }).addTo(map);
 
     return () => {
       if (routingControl) map.removeControl(routingControl);
@@ -64,18 +61,19 @@ function Routing({ destinations }) {
 
 export default function TripMap({ center, destinations, onAddDestination, onMarkerDrag }) {
   return (
-    <MapContainer center={center} zoom={13} style={{ height: "500px", width: "100%" }}>
+    <MapContainer center={center} zoom={13} style={{ height: "100%", width: "100%" }}>
       <TileLayer
-        attribution='&copy; OpenStreetMap contributors'
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+
       <LocationMarker onAddDestination={onAddDestination} />
 
       {destinations.map((d, i) => (
         <Marker
           key={i}
           position={[d.lat, d.lng]}
-          draggable={!d.locked}
+          draggable
           eventHandlers={{
             dragend: (e) => {
               const { lat, lng } = e.target.getLatLng();

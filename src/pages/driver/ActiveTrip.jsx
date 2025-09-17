@@ -1,17 +1,21 @@
 import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { supabase } from "../../api/supabaseClient";
 import { getTripById } from "../../api/api";
+import { useAuth } from "../../context/AuthContext";
 
 import MapView from "./activetrip/index"; 
 import Destinations from "./activetrip/Destinations";
 import Expenses from "./activetrip/Expenses";
 import CompleteTrip from "./activetrip/CompleteTrip";
 
-export default function ActiveTrip({ tripId, onBack }) {
+export default function ActiveTrip({ tripId, userId, onBack }) {
   const [trip, setTrip] = useState(null);
   const [destinations, setDestinations] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const currentUserId = user?.id;
 
   useEffect(() => {
     if (!tripId) return setLoading(false);
@@ -74,7 +78,16 @@ export default function ActiveTrip({ tripId, onBack }) {
         }
 
         setDestinations(initDestinations);
-        setExpenses(normalizedTrip.expenses || []);
+
+        const { data: expenseData, error: expenseError } = await supabase
+          .from("expenses")
+          .select("*")
+          .eq("trip_id", tripId)
+          .order("created_at", { ascending: true });
+
+        if (expenseError) throw expenseError;
+
+        setExpenses(expenseData || []);
       } catch (err) {
         console.error("Failed to fetch trip:", err);
       } finally {
@@ -92,15 +105,37 @@ export default function ActiveTrip({ tripId, onBack }) {
     setDestinations([...destinations, { id: uuidv4(), name, lat, lng }]);
   };
 
-  const addExpense = () => {
-    setExpenses([...expenses, { id: uuidv4(), reason: "", amount: 0, proof: null }]);
+  const addExpense = async () => {
+    try {
+      const newExpense = {
+        trip_id: trip.id,
+        type: "fuel",
+        amount: 0,
+        reason: "",
+        reported_by: userId,
+      };
+
+      const { data, error } = await supabase
+        .from("expenses")
+        .insert([newExpense])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setExpenses(prev => [...prev, data]);
+    } catch (err) {
+      console.error("Failed to add expense:", err.message);
+    }
   };
 
   const updateExpense = (id, field, value) => {
-    setExpenses(expenses.map(e => (e.id === id ? { ...e, [field]: value } : e)));
+    setExpenses(prev => prev.map(e => (e.id === id ? { ...e, [field]: value } : e)));
   };
 
-  const removeExpense = id => setExpenses(expenses.filter(e => e.id !== id));
+  const removeExpense = id => {
+    setExpenses(prev => prev.filter(e => e.id !== id));
+  };
 
   if (loading) return <p className="text-center mt-10">Loading trip details...</p>;
   if (!trip) return <p className="text-center mt-10">Trip not found.</p>;
@@ -123,13 +158,21 @@ export default function ActiveTrip({ tripId, onBack }) {
         />
 
         <Expenses
+          tripId={trip.id}
+          userId={userId}
           expenses={expenses}
+          setExpenses={setExpenses}
           addExpense={addExpense}
           updateExpense={updateExpense}
           removeExpense={removeExpense}
         />
 
-        <CompleteTrip tripId={trip.id} onBack={onBack} />
+        <CompleteTrip
+          tripId={trip.id}
+          userId={currentUserId}
+          expenses={expenses}  
+          onBack={onBack}
+        />
       </div>
     </div>
   );

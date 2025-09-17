@@ -81,3 +81,7 @@ themes: corporate --default, business --prefersdark;
   position: relative;
   z-index: 10; 
 }
+
+body {
+  font-family: "Microsoft YaHei UI", "Microsoft YaHei", 微软雅黑, "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", sans-serif;
+}

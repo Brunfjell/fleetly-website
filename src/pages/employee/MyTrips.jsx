@@ -2,186 +2,178 @@ import { useEffect, useState, useMemo } from "react";
 import { getMyTrips } from "../../api/api";
 import { useAuth } from "../../context/AuthContext";
 import DataTable from "../../components/DataTable";
+import Modal from "../../components/Modal";
 import { formatDate } from "../../utils/formatters";
-import { FaSearch, FaExclamationTriangle, FaRoute, FaInfoCircle } from "react-icons/fa";
+import { FaRoute } from "react-icons/fa";
+
+const formatDateSafe = (date) => {
+  const d = new Date(date);
+  if (isNaN(d)) return "-";
+  return formatDate(d);
+};
+
+function DestinationsModal({ isOpen, onClose, destinations }) {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Trip Destinations" size="md">
+      {Array.isArray(destinations) && destinations.length > 0 ? (
+        <ul className="list-disc ml-4 space-y-1">
+          {destinations.map((d, idx) => {
+            const lat = typeof d.lat === "number" ? d.lat.toFixed(4) : "-";
+            const lng = typeof d.lng === "number" ? d.lng.toFixed(4) : "-";
+            return (
+              <li key={idx}>
+                {d.name || "-"} ({lat}, {lng})
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p>No destinations available.</p>
+      )}
+      <div className="mt-4 text-right">
+        <button className="btn btn-outline" onClick={onClose}>
+          Close
+        </button>
+      </div>
+    </Modal>
+  );
+}
 
 export default function MyTrips() {
   const { user } = useAuth();
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [destModalOpen, setDestModalOpen] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState(null);
+
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
   useEffect(() => {
     if (user) {
-      const loadTrips = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-          const data = await getMyTrips(user.id);
-          setTrips(Array.isArray(data) ? data : []);
-        } catch (err) {
-          console.error("Failed to load trips:", err);
-          setError("Failed to load your trips");
-        } finally {
-          setLoading(false);
-        }
-      };
-      loadTrips();
+      setLoading(true);
+      getMyTrips(user.id)
+        .then((data) => setTrips(Array.isArray(data) ? data : []))
+        .catch(() => console.error("Failed to load trips"))
+        .finally(() => setLoading(false));
     }
   }, [user]);
 
   const filteredAndPaginatedTrips = useMemo(() => {
-    const filtered = trips.filter(trip => 
-      trip.destination?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      formatDate(trip.date)?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filtered = trips.filter((trip) => {
+      const lastDest = trip.destinations?.[trip.destinations.length - 1]?.name || trip.destination || "";
+
+      const matchesSearch =
+        lastDest.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (trip.status?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+        (trip.reason?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+        formatDateSafe(trip.start_time || trip.date).toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesStatus = statusFilter === "all" || trip.status === statusFilter;
+
+      const tripDate = new Date(trip.start_time || trip.date);
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+      const matchesDate =
+        (!start || tripDate >= start) &&
+        (!end || tripDate <= end);
+
+      return matchesSearch && matchesStatus && matchesDate;
+    });
 
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
-    
+
     return { filtered, paginated };
-  }, [trips, searchTerm, currentPage]);
+  }, [trips, searchTerm, statusFilter, startDate, endDate, currentPage]);
 
   const totalPages = Math.ceil(filteredAndPaginatedTrips.filtered.length / itemsPerPage);
 
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-    setCurrentPage(1);
-  };
+  const handleView = (trip) => setSelectedTrip(trip) || setModalOpen(true);
+  const handleDestinations = (trip) => setSelectedTrip(trip) || setDestModalOpen(true);
+  const clearSearch = () => setSearchTerm("");
 
-  const clearSearch = () => {
-    setSearchTerm("");
-  };
-
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-  };
-
-  const renderPagination = () => {
-    if (totalPages <= 1) return null;
-
-    const pages = [];
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(
-        <input
-          key={i}
-          className="join-item btn btn-square"
-          type="radio"
-          name="options"
-          aria-label={i.toString()}
-          checked={currentPage === i}
-          onChange={() => handlePageChange(i)}
-        />
-      );
-    }
-
-    return (
-      <div className="join">
-        {currentPage > 1 && (
-          <button
-            className="join-item btn btn-square"
-            onClick={() => handlePageChange(currentPage - 1)}
-          >
-            «
-          </button>
-        )}
-        {pages}
-        {currentPage < totalPages && (
-          <button
-            className="join-item btn btn-square"
-            onClick={() => handlePageChange(currentPage + 1)}
-          >
-            »
-          </button>
-        )}
-      </div>
-    );
-  };
+  const handlePageChange = (page) => setCurrentPage(page);
 
   const getStatusBadge = (status) => {
-    const statusClasses = {
+    const classes = {
       completed: "badge-success",
       active: "badge-info",
       pending: "badge-warning",
       cancelled: "badge-error",
     };
-    
-    return (
-      <span className={`badge ${statusClasses[status] || 'badge-info'}`}>
-        {status}
-      </span>
-    );
+    return <span className={`badge ${classes[status] || "badge-info"}`}>{status}</span>;
   };
 
-  const columns = ["Date", "Destination", "Status"];
-  const rows = filteredAndPaginatedTrips.paginated.map((t) => [
-    formatDate(t.date),
-    t.destination || "-",
-    getStatusBadge(t.status || "-"),
-  ]);
+  const columns = ["id", "date", "status"];
+  const rows = filteredAndPaginatedTrips.paginated.map((t) => ({
+    id: t.id,
+    date: formatDateSafe(t.start_time || t.date),
+    destination: t.destinations?.[t.destinations.length - 1]?.name || t.destination || "-",
+    status: getStatusBadge(t.status),
+    tripObject: t,
+  }));
 
   return (
-    <div className="min-h-screen bg-base-100">
+    <div className="min-h-[80vh] bg-base-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-          <h1 className="text-3xl font-bold text-base-content mb-4 sm:mb-0">
-            My Trips
-          </h1>
-        </div>
+        <h1 className="text-3xl font-bold text-base-content mb-6">My Trips</h1>
 
-        <div className="bg-base-200 rounded-lg shadow-sm p-4 sm:p-6 mb-6">
+        <div className="bg-base-200 rounded-lg shadow-sm p-4 sm:p-6 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="form-control">
-            <label className="label">
-              <span className="label-text font-semibold">Search My Trips</span>
-            </label>
-            <div className="relative">
-              <FaSearch className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by destination, status, or date..."
-                value={searchTerm}
-                onChange={handleSearch}
-                className="input input-bordered w-full pl-10 focus:input-primary"
-              />
-              {searchTerm && (
-                <button
-                  onClick={clearSearch}
-                  className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-            {searchTerm && (
-              <div className="text-sm text-base-content opacity-70 mt-2">
-                Showing {filteredAndPaginatedTrips.paginated.length} of {filteredAndPaginatedTrips.filtered.length} trips
-                {searchTerm && ` matching "${searchTerm}"`}
-              </div>
-            )}
+            <label className="label"><span className="label-text">Search</span></label>
+            <input
+              type="text"
+              placeholder="Search by destination, status, reason, or date..."
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              className="input input-bordered w-full focus:input-primary"
+            />
+          </div>
+
+          <div className="form-control">
+            <label className="label"><span className="label-text">Status</span></label>
+            <select
+              className="select select-bordered"
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+            >
+              <option value="all">All</option>
+              <option value="active">Active</option>
+              <option value="completed">Completed</option>
+              <option value="pending">Pending</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+
+          <div className="form-control">
+            <label className="label"><span className="label-text">Start Date</span></label>
+            <input
+              type="date"
+              className="input input-bordered"
+              value={startDate}
+              onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
+            />
+          </div>
+
+          <div className="form-control">
+            <label className="label"><span className="label-text">End Date</span></label>
+            <input
+              type="date"
+              className="input input-bordered"
+              value={endDate}
+              onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
+            />
           </div>
         </div>
 
         <div className="bg-base-200 rounded-lg shadow-sm p-4 sm:p-6">
-          {error && (
-            <div className="alert alert-error mb-6 shadow-lg">
-              <FaExclamationTriangle className="w-5 h-5" />
-              <span>{error}</span>
-            </div>
-          )}
-
           {loading ? (
             <div className="flex justify-center py-12">
               <span className="loading loading-spinner loading-lg text-primary"></span>
@@ -190,28 +182,58 @@ export default function MyTrips() {
             <div className="text-center py-12">
               <FaRoute className="w-16 h-16 mx-auto text-gray-400 mb-4" />
               <p className="text-lg text-gray-600 font-medium mb-4">No trips found</p>
-              <p className="text-base-content opacity-70">You haven't taken any trips yet.</p>
             </div>
           ) : filteredAndPaginatedTrips.filtered.length === 0 ? (
             <div className="text-center py-12">
               <FaRoute className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-lg text-gray-600 font-medium mb-4">No trips match your search</p>
-              <button className="btn btn-outline" onClick={clearSearch}>
-                Clear Search
+              <p className="text-lg text-gray-600 font-medium mb-4">No trips match your filters</p>
+              <button className="btn btn-outline" onClick={() => { setSearchTerm(""); setStatusFilter("all"); setStartDate(""); setEndDate(""); }}>
+                Clear Filters
               </button>
             </div>
           ) : (
-            <>
-              <DataTable columns={columns} rows={rows} />
-              
-              {totalPages > 1 && (
-                <div className="flex justify-center mt-8">
-                  {renderPagination()}
-                </div>
-              )}
-            </>
+            <DataTable
+              columns={columns}
+              data={rows}
+              actions={[
+                { label: "View", className: "btn btn-sm btn-primary", onClick: (row) => handleView(row.tripObject) },
+                { label: "Destinations", className: "btn btn-sm btn-info", onClick: (row) => handleDestinations(row.tripObject) },
+              ]}
+            />
           )}
         </div>
+
+        <Modal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          title="Trip Details"
+          size="lg"
+          footer={<button className="btn btn-outline" onClick={() => setModalOpen(false)}>Close</button>}
+        >
+          {selectedTrip && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-bold text-lg mb-3 text-primary">Trip Information</h3>
+                  <p><strong>Date:</strong> {formatDateSafe(selectedTrip.start_time || selectedTrip.date)}</p>
+                  <p><strong>Status:</strong> {getStatusBadge(selectedTrip.status)}</p>
+                  <p><strong>Reason:</strong> {selectedTrip.reason || "No reason provided"}</p>
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg mb-3 text-primary">Location & Vehicle</h3>
+                  <p><strong>Vehicle:</strong> {selectedTrip.vehicle?.plate_number || "-"}</p>
+                  <p><strong>Driver:</strong> {selectedTrip.driver?.name || "-"}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </Modal>
+
+        <DestinationsModal
+          isOpen={destModalOpen}
+          onClose={() => setDestModalOpen(false)}
+          destinations={selectedTrip?.destinations}
+        />
       </div>
     </div>
   );

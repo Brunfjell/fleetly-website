@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
-import { getVehicles, getTrips, getExpenses } from "../../api/api";
+import { useNavigate } from "react-router-dom";
+import { getVehicles, getTrips, getExpensesSum } from "../../api/api";
 import { FaCar, FaRoute, FaMoneyBill, FaUsers, FaClock, FaExclamationTriangle } from "react-icons/fa";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+
   const [stats, setStats] = useState({ 
     vehicles: 0, 
     trips: 0, 
@@ -17,11 +20,11 @@ export default function Dashboard() {
       try {
         setLoading(true);
         setError(null);
-        
+
         const [vehicles, trips, expenses] = await Promise.all([
           getVehicles(),
           getTrips({ id: null }, "admin"),
-          getExpenses({ id: null }, "admin")
+          getExpensesSum({ id: null }, "admin")
         ]);
 
         const activeTrips = trips.data?.filter(trip => trip.status === 'in_progress')?.length || 0;
@@ -29,7 +32,7 @@ export default function Dashboard() {
         setStats({
           vehicles: vehicles.data?.length || 0,
           trips: trips.data?.length || 0,
-          expenses: expenses.data?.length || 0,
+          expenses: expenses.total || 0, 
           activeTrips
         });
       } catch (err) {
@@ -44,7 +47,7 @@ export default function Dashboard() {
   }, []);
 
   const StatCard = ({ title, value, icon: Icon, color = "primary", subtitle }) => (
-    <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow duration-300">
+    <div className="card bg-base-200 shadow-lg hover:shadow-xl transition-shadow duration-300">
       <div className="card-body">
         <div className="flex items-center justify-between">
           <div>
@@ -61,7 +64,7 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="min-h-[91vh] bg-base-300">
+    <div className="min-h-[91vh] bg-base-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-base-content mb-2">Dashboard Overview</h1>
@@ -108,7 +111,7 @@ export default function Dashboard() {
               />
               <StatCard
                 title="Total Expenses"
-                value={stats.expenses}
+                value={`₱${stats.expenses}`}
                 icon={FaMoneyBill}
                 color="accent"
                 subtitle="All expenses"
@@ -118,33 +121,36 @@ export default function Dashboard() {
             <div className="bg-base-200 rounded-lg p-6 shadow-sm">
               <h2 className="text-xl font-semibold text-base-content mb-4">Quick Actions</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <button className="btn btn-accent btn-outline">
+                <button
+                  className="btn btn-accent btn-outline"
+                  onClick={() => navigate("/admin/vehicles")}
+                >
                   <FaCar className="w-4 h-4 mr-2" />
                   Manage Vehicles
                 </button>
-                <button className="btn btn-accent btn-outline">
+                <button
+                  className="btn btn-accent btn-outline"
+                  onClick={() => navigate("/admin/trips")}
+                >
                   <FaRoute className="w-4 h-4 mr-2" />
                   View Trips
                 </button>
-                <button className="btn btn-accent btn-outline">
+                <button
+                  className="btn btn-accent btn-outline"
+                  onClick={() => navigate("/admin/expenses")}
+                >
                   <FaMoneyBill className="w-4 h-4 mr-2" />
                   Review Expenses
                 </button>
-                <button className="btn btn-accent btn-outline">
+                <button
+                  className="btn btn-accent btn-outline"
+                  onClick={() => navigate("/admin/employees")}
+                >
                   <FaUsers className="w-4 h-4 mr-2" />
                   Manage Users
                 </button>
               </div>
             </div>
-          {/*}
-            <div className="mt-8 bg-base-200 rounded-lg p-6 shadow-sm">
-              <h2 className="text-xl font-semibold text-base-content mb-4">Recent Activity</h2>
-              <div className="text-center py-8">
-                <FaClock className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                <p className="text-base-content opacity-70">Recent activity will appear here</p>
-              </div>
-            </div>
-          */}
           </>
         )}
       </div>

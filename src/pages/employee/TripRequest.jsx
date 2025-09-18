@@ -5,7 +5,6 @@ import { MdFilterCenterFocus, MdDirectionsCar, MdPerson, MdDescription } from "r
 import { FaRoute, FaPlus, FaTrash, FaSpinner } from "react-icons/fa";
 import { useOutletContext } from "react-router-dom";
 
-// Calculate distance between two points in km
 const haversineDistance = (p1, p2) => {
   const R = 6371;
   const dLat = ((p2.lat - p1.lat) * Math.PI) / 180;
@@ -18,7 +17,6 @@ const haversineDistance = (p1, p2) => {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-// Get location name from coordinates
 const getLocationName = async (lat, lng) => {
   try {
     const res = await fetch(
@@ -92,7 +90,6 @@ export default function TripRequest() {
     fetchData();
   }, []);
 
-  // Click outside search box closes results
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {

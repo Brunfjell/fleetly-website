@@ -1,5 +1,3 @@
-import { Link } from 'react-router-dom';
-import { FiFacebook, FiInstagram, FiMail, FiPhone, FiMapPin, FiArrowRight } from 'react-icons/fi';
 import { FaReact } from 'react-icons/fa';
 import { SiVite, SiSupabase, SiNodedotjs } from 'react-icons/si';
 

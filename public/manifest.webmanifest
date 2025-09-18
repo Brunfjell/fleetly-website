@@ -1,11 +1,11 @@
 {
-  "name": "My App",
-  "short_name": "App",
+  "name": "Fleetly-Website",
+  "short_name": "Fleetly",
   "start_url": "/fleetly-website/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#317EFB",
-  "description": "A sample PWA with Dexie.js and Supabase sync.",
+  "description": "Trip Monitoring and Fleet Management System",
   "icons": [
     {
       "src": "/fleetly-website/pwa-192x192.png",

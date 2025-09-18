@@ -1,6 +1,7 @@
 import { Outlet, NavLink } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { useAuth } from "../context/AuthContext";
+import IdleWatcher from "../components/IdleWatcher";
 import ThemeToggle from "../components/ThemeToggle";
 import { useState } from "react";
 import { FiMenu } from "react-icons/fi";
@@ -92,6 +93,9 @@ export default function DriverLayout() {
           </div>
         </dialog>
       )}
-    </div><Footer /></>
+    </div>
+    <Footer />
+    <IdleWatcher />
+    </>
   );
 }

@@ -49,8 +49,8 @@ export default function MyTrips() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [filterDate, setFilterDate] = useState("");
+  const [sortOrder, setSortOrder] = useState("latest"); // "latest" | "oldest"
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
@@ -66,38 +66,58 @@ export default function MyTrips() {
   }, [user]);
 
   const filteredAndPaginatedTrips = useMemo(() => {
-    const filtered = trips.filter((trip) => {
-      const lastDest = trip.destinations?.[trip.destinations.length - 1]?.name || trip.destination || "";
+    let filtered = trips.filter((trip) => {
+      const lastDest =
+        trip.destinations?.[trip.destinations.length - 1]?.name ||
+        trip.destination ||
+        "";
 
       const matchesSearch =
         lastDest.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (trip.status?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
         (trip.reason?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-        formatDateSafe(trip.start_time || trip.date).toLowerCase().includes(searchTerm.toLowerCase());
+        formatDateSafe(trip.start_time || trip.date)
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
 
-      const matchesStatus = statusFilter === "all" || trip.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "all" || trip.status === statusFilter;
 
       const tripDate = new Date(trip.start_time || trip.date);
-      const start = startDate ? new Date(startDate) : null;
-      const end = endDate ? new Date(endDate) : null;
+      const filter = filterDate ? new Date(filterDate) : null;
       const matchesDate =
-        (!start || tripDate >= start) &&
-        (!end || tripDate <= end);
+        !filter || tripDate.toDateString() === filter.toDateString();
 
       return matchesSearch && matchesStatus && matchesDate;
+    });
+
+    filtered.sort((a, b) => {
+      const dateA = new Date(a.start_time || a.date);
+      const dateB = new Date(b.start_time || b.date);
+      return sortOrder === "latest"
+        ? dateB - dateA
+        : dateA - dateB;
     });
 
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
 
     return { filtered, paginated };
-  }, [trips, searchTerm, statusFilter, startDate, endDate, currentPage]);
+  }, [trips, searchTerm, statusFilter, filterDate, sortOrder, currentPage]);
 
-  const totalPages = Math.ceil(filteredAndPaginatedTrips.filtered.length / itemsPerPage);
+  const totalPages = Math.ceil(
+    filteredAndPaginatedTrips.filtered.length / itemsPerPage
+  );
 
   const handleView = (trip) => setSelectedTrip(trip) || setModalOpen(true);
-  const handleDestinations = (trip) => setSelectedTrip(trip) || setDestModalOpen(true);
-  const clearSearch = () => setSearchTerm("");
+  const handleDestinations = (trip) =>
+    setSelectedTrip(trip) || setDestModalOpen(true);
+  const clearFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setFilterDate("");
+    setSortOrder("latest");
+  };
 
   const handlePageChange = (page) => setCurrentPage(page);
 
@@ -108,14 +128,21 @@ export default function MyTrips() {
       pending: "badge-warning",
       cancelled: "badge-error",
     };
-    return <span className={`badge ${classes[status] || "badge-info"}`}>{status}</span>;
+    return (
+      <span className={`badge ${classes[status] || "badge-info"}`}>
+        {status}
+      </span>
+    );
   };
 
-  const columns = ["id", "date", "status"];
+  const columns = ["id", "date", "destination", "status"];
   const rows = filteredAndPaginatedTrips.paginated.map((t) => ({
     id: t.id,
     date: formatDateSafe(t.start_time || t.date),
-    destination: t.destinations?.[t.destinations.length - 1]?.name || t.destination || "-",
+    destination:
+      t.destinations?.[t.destinations.length - 1]?.name ||
+      t.destination ||
+      "-",
     status: getStatusBadge(t.status),
     tripObject: t,
   }));
@@ -127,22 +154,32 @@ export default function MyTrips() {
 
         <div className="bg-base-200 rounded-lg shadow-sm p-4 sm:p-6 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="form-control">
-            <label className="label"><span className="label-text">Search</span></label>
+            <label className="label">
+              <span className="label-text">Search</span>
+            </label>
             <input
               type="text"
               placeholder="Search by destination, status, reason, or date..."
               value={searchTerm}
-              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
               className="input input-bordered w-full focus:input-primary"
             />
           </div>
 
           <div className="form-control">
-            <label className="label"><span className="label-text">Status</span></label>
+            <label className="label">
+              <span className="label-text">Status</span>
+            </label>
             <select
               className="select select-bordered"
               value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1);
+              }}
             >
               <option value="all">All</option>
               <option value="active">Active</option>
@@ -153,23 +190,32 @@ export default function MyTrips() {
           </div>
 
           <div className="form-control">
-            <label className="label"><span className="label-text">Start Date</span></label>
+            <label className="label">
+              <span className="label-text">Date</span>
+            </label>
             <input
               type="date"
               className="input input-bordered"
-              value={startDate}
-              onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
+              value={filterDate}
+              onChange={(e) => {
+                setFilterDate(e.target.value);
+                setCurrentPage(1);
+              }}
             />
           </div>
 
           <div className="form-control">
-            <label className="label"><span className="label-text">End Date</span></label>
-            <input
-              type="date"
-              className="input input-bordered"
-              value={endDate}
-              onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
-            />
+            <label className="label">
+              <span className="label-text">Sort</span>
+            </label>
+            <select
+              className="select select-bordered"
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value)}
+            >
+              <option value="latest">Latest First</option>
+              <option value="oldest">Oldest First</option>
+            </select>
           </div>
         </div>
 
@@ -181,13 +227,17 @@ export default function MyTrips() {
           ) : trips.length === 0 ? (
             <div className="text-center py-12">
               <FaRoute className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-lg text-gray-600 font-medium mb-4">No trips found</p>
+              <p className="text-lg text-gray-600 font-medium mb-4">
+                No trips found
+              </p>
             </div>
           ) : filteredAndPaginatedTrips.filtered.length === 0 ? (
             <div className="text-center py-12">
               <FaRoute className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-lg text-gray-600 font-medium mb-4">No trips match your filters</p>
-              <button className="btn btn-outline" onClick={() => { setSearchTerm(""); setStatusFilter("all"); setStartDate(""); setEndDate(""); }}>
+              <p className="text-lg text-gray-600 font-medium mb-4">
+                No trips match your filters
+              </p>
+              <button className="btn btn-outline" onClick={clearFilters}>
                 Clear Filters
               </button>
             </div>
@@ -196,8 +246,16 @@ export default function MyTrips() {
               columns={columns}
               data={rows}
               actions={[
-                { label: "View", className: "btn btn-sm btn-primary", onClick: (row) => handleView(row.tripObject) },
-                { label: "Destinations", className: "btn btn-sm btn-info", onClick: (row) => handleDestinations(row.tripObject) },
+                {
+                  label: "View",
+                  className: "btn btn-sm btn-primary",
+                  onClick: (row) => handleView(row.tripObject),
+                },
+                {
+                  label: "Destinations",
+                  className: "btn btn-sm btn-info",
+                  onClick: (row) => handleDestinations(row.tripObject),
+                },
               ]}
             />
           )}
@@ -208,21 +266,46 @@ export default function MyTrips() {
           onClose={() => setModalOpen(false)}
           title="Trip Details"
           size="lg"
-          footer={<button className="btn btn-outline" onClick={() => setModalOpen(false)}>Close</button>}
+          footer={
+            <button
+              className="btn btn-outline"
+              onClick={() => setModalOpen(false)}
+            >
+              Close
+            </button>
+          }
         >
           {selectedTrip && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <h3 className="font-bold text-lg mb-3 text-primary">Trip Information</h3>
-                  <p><strong>Date:</strong> {formatDateSafe(selectedTrip.start_time || selectedTrip.date)}</p>
-                  <p><strong>Status:</strong> {getStatusBadge(selectedTrip.status)}</p>
-                  <p><strong>Reason:</strong> {selectedTrip.reason || "No reason provided"}</p>
+                  <h3 className="font-bold text-lg mb-3 text-primary">
+                    Trip Information
+                  </h3>
+                  <p>
+                    <strong>Date:</strong>{" "}
+                    {formatDateSafe(selectedTrip.start_time || selectedTrip.date)}
+                  </p>
+                  <p>
+                    <strong>Status:</strong>{" "}
+                    {getStatusBadge(selectedTrip.status)}
+                  </p>
+                  <p>
+                    <strong>Reason:</strong>{" "}
+                    {selectedTrip.reason || "No reason provided"}
+                  </p>
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg mb-3 text-primary">Location & Vehicle</h3>
-                  <p><strong>Vehicle:</strong> {selectedTrip.vehicle?.plate_number || "-"}</p>
-                  <p><strong>Driver:</strong> {selectedTrip.driver?.name || "-"}</p>
+                  <h3 className="font-bold text-lg mb-3 text-primary">
+                    Location & Vehicle
+                  </h3>
+                  <p>
+                    <strong>Vehicle:</strong>{" "}
+                    {selectedTrip.vehicle?.plate_number || "-"}
+                  </p>
+                  <p>
+                    <strong>Driver:</strong> {selectedTrip.driver?.name || "-"}
+                  </p>
                 </div>
               </div>
             </div>

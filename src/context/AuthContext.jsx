@@ -7,13 +7,19 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loginError, setLoginError] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
 
     const initSession = async () => {
       try {
-        const { data } = await supabase.auth.getSession();
+        const { data, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error("Error fetching session:", error.message);
+        }
+
         const currentUser = data?.session?.user || null;
 
         if (isMounted) {
@@ -22,6 +28,7 @@ export function AuthProvider({ children }) {
           setLoading(false);
         }
       } catch (err) {
+        console.error("Unexpected error restoring session:", err);
         if (isMounted) {
           setUser(null);
           setRole(null);
@@ -31,8 +38,9 @@ export function AuthProvider({ children }) {
     };
 
     initSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!isMounted) return;
 
       if (session?.user) {
@@ -53,31 +61,52 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     setLoading(true);
+    setLoginError(null);
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
     if (error) {
+      console.error("Login error:", error.message);
       setLoading(false);
-      throw error;
+      setLoginError("Invalid login credentials");
+      return null;
     }
 
     const currentUser = data.user;
     setUser(currentUser);
-    const userRole = currentUser?.user_metadata?.role || null;
-    setRole(userRole);
+    setRole(currentUser?.user_metadata?.role || null);
     setLoading(false);
 
     return currentUser;
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setRole(null);
-    setLoading(false);
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn("Logout warning:", err.message);
+    } finally {
+      setUser(null);
+      setRole(null);
+      setLoading(false);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, loading, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        role,
+        loading,
+        login,
+        logout,
+        loginError,
+        setLoginError,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

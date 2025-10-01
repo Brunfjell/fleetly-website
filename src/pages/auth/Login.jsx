@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Footer } from "../../components/Footer";
+import { FaReact } from 'react-icons/fa';
+import { SiVite, SiSupabase, SiNodedotjs } from 'react-icons/si';
 
 export default function Login() {
   const { login, loginError, setLoginError } = useAuth();
@@ -89,6 +90,34 @@ export default function Login() {
                 </button>
               </form>
             </div>
+
+            <div className="divider divider-neutral/90 w-xs mx-auto"></div>
+
+            <div className="text-neutral-600 px-6 pb-2 mx-auto">
+              <p className="font-bold text-center">Made by</p>
+              <a
+                href="https://brunfjell.github.io/brunfjell-portfolio/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center"
+              >
+                <img 
+                  src="/fleetly-website/BrunLogo-bwbg.png" 
+                  alt="Brunfjell Logo" 
+                  className="h-6 w-6 object-contain"
+                />
+                <p className='font-bold font-sans text-lg'>BRUNFJELL</p>
+              </a>
+            </div>
+            <div className="text-neutral-600 px-6 pb-12 mx-auto text-center">
+              <p className="font-bold text-neutral-600">Made with</p>
+              <div className="flex items-center gap-2">
+                <FaReact className="h-6 w-6 text-neutral-600" />
+                <SiVite className="h-6 w-6 text-neutral-600" />
+                <SiNodedotjs className="h-6 w-6 text-neutral-600" />
+                <SiSupabase className="h-6 w-6 text-neutral-600" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -107,8 +136,6 @@ export default function Login() {
           </div>
         </div>
       )}
-
-      <Footer />
     </>
   );
 }

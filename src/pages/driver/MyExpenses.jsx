@@ -127,12 +127,11 @@ export default function MyExpenses() {
   const expenseTypes = Array.from(new Set(expenses.map(e => e.type))).sort();
 
   return (
-    <div className="min-h-[80vh] bg-base-100">
+    <div className="min-h-[80vh]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <h1 className="text-3xl font-bold mb-4">My Expenses</h1>
 
-        {/* Filters */}
-        <div className="bg-base-200 rounded-lg shadow-sm p-4 sm:p-6 mb-6 grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="bg-base-100 rounded-lg shadow-sm p-4 sm:p-6 mb-6 grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="form-control">
             <label className="label"><span className="label-text">Search</span></label>
             <div className="relative">
@@ -168,8 +167,7 @@ export default function MyExpenses() {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="bg-base-200 rounded-lg shadow-sm p-4 sm:p-6">
+        <div className="bg-base-100 rounded-lg shadow-sm p-4 sm:p-6">
           {error && <div className="alert alert-error mb-4"><FaExclamationTriangle className="w-5 h-5 mr-2"/> {error}</div>}
 
           {loading ? (
@@ -183,7 +181,7 @@ export default function MyExpenses() {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="table table-zebra w-full">
+                <table className="table table w-full">
                   <thead>
                     <tr>
                       <th>ID</th><th>Type</th><th>Amount</th><th>Reason</th><th>Proof</th><th>Actions</th>
@@ -231,7 +229,6 @@ export default function MyExpenses() {
           )}
         </div>
 
-        {/* Modals */}
         <Modal isOpen={uploadModalOpen} onClose={() => setUploadModalOpen(false)} title="Upload Proof Document" size="md">
           {selectedExpense && (
             <div className="space-y-4">

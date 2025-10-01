@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { supabase } from "../../../api/supabaseClient";
 
-export default function CompleteTrip({ tripId, userId, expenses, onBack }) {
+export default function CompleteTrip({ tripId, userId, expenses, onBack, onDepart, isDeparting }) {
   const [errorMessage, setErrorMessage] = useState("");
 
   const handleComplete = async () => {
     setErrorMessage("");
-    const invalidExpense = expenses.find(exp => exp.amount <= 0);
+
+    const invalidExpense = expenses.find((exp) => exp.amount <= 0);
     if (invalidExpense) {
       setErrorMessage(`Cannot complete trip. Expense "${invalidExpense.type}" has an amount of 0.`);
       return;
@@ -16,7 +17,7 @@ export default function CompleteTrip({ tripId, userId, expenses, onBack }) {
 
     try {
       if (expenses.length > 0) {
-        const expensesToInsert = expenses.map(exp => ({
+        const expensesToInsert = expenses.map((exp) => ({
           trip_id: tripId,
           type: exp.type,
           amount: exp.amount,
@@ -65,6 +66,13 @@ export default function CompleteTrip({ tripId, userId, expenses, onBack }) {
           <span>{errorMessage}</span>
         </div>
       )}
+
+      <button
+        className={`btn w-full mb-2 ${isDeparting ? "btn-warning" : "btn-primary"}`}
+        onClick={onDepart}
+      >
+        {isDeparting ? "Stop Depart" : "Depart"}
+      </button>
 
       <button className="btn btn-success w-full" onClick={handleComplete}>
         Complete Trip

@@ -132,16 +132,16 @@ export default function MyExpenses() {
   const expenseTypes = Array.from(new Set(expenses.map(e => e.type))).sort();
 
   return (
-    <div className="min-h-[80vh] bg-base-100">
+    <div className="min-h-[80vh] bg-base-2n00">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <h1 className="text-3xl font-bold mb-4">My Expenses</h1>
 
-        <div className="bg-base-200 rounded-lg shadow-sm p-4 sm:p-6 mb-6 grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="bg-base-100 rounded-lg shadow-sm p-4 sm:p-6 mb-6 grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="form-control">
             <label className="label"><span className="label-text">Search</span></label>
             <div className="relative">
               <FaSearch className="absolute left-3 top-3.5 w-4 h-4 text-gray-400"/>
-              <input type="text" placeholder="Search ID, type, reason, amount..." value={searchTerm} onChange={handleSearch} className="input input-bordered w-full pl-10 focus:input-primary"/>
+              <input type="text" placeholder="Search..." value={searchTerm} onChange={handleSearch} className="input input-bordered w-full pl-3 focus:input-primary"/>
               {searchTerm && <button className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600" onClick={() => setSearchTerm("")}>✕</button>}
             </div>
           </div>
@@ -173,7 +173,7 @@ export default function MyExpenses() {
           </div>
         </div>
 
-        <div className="bg-base-200 rounded-lg shadow-sm p-4 sm:p-6">
+        <div className="bg-base-100 rounded-lg shadow-sm p-4 sm:p-6">
           {error && <div className="alert alert-error mb-6 shadow-lg"><FaExclamationTriangle className="w-5 h-5"/> {error}</div>}
 
           {loading ? (
@@ -185,7 +185,7 @@ export default function MyExpenses() {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="table table-zebra w-full">
+                <table className="table table w-full">
                   <thead>
                     <tr>
                       <th>ID</th>
@@ -231,7 +231,7 @@ export default function MyExpenses() {
         <Modal isOpen={uploadModalOpen} onClose={() => setUploadModalOpen(false)} title="Upload Proof Document" size="md">
           {selectedExpense && (
             <div className="space-y-4">
-              <div className="bg-base-200 p-4 rounded-lg">
+              <div className="bg-base-100 p-4 rounded-lg">
                 <h3 className="font-semibold mb-2">Expense Details</h3>
                 <p><strong>Type:</strong> {selectedExpense.type}</p>
                 <p><strong>Amount:</strong> {formatCurrency(selectedExpense.amount)}</p>
@@ -254,7 +254,7 @@ export default function MyExpenses() {
         <Modal isOpen={viewModalOpen} onClose={() => setViewModalOpen(false)} title="Expense Proof" size="max-w-4xl">
           {selectedExpense && selectedExpense.proof_url && (
             <div className="space-y-6">
-              <div className="bg-base-200 p-4 rounded-lg">
+              <div className="bg-base-200/50 p-4 rounded-lg">
                 <h3 className="font-semibold mb-2">Expense Details</h3>
                 <p><strong>Type:</strong> {selectedExpense.type}</p>
                 <p><strong>Amount:</strong> {formatCurrency(selectedExpense.amount)}</p>

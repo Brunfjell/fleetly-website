@@ -16,13 +16,26 @@ function DestinationsModal({ isOpen, onClose, destinations }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Trip Destinations" size="md">
       {Array.isArray(destinations) && destinations.length > 0 ? (
-        <ul className="list-disc ml-4 space-y-1">
+        <ul className="timeline timeline-vertical">
           {destinations.map((d, idx) => {
             const lat = typeof d.lat === "number" ? d.lat.toFixed(4) : "-";
             const lng = typeof d.lng === "number" ? d.lng.toFixed(4) : "-";
+
             return (
               <li key={idx}>
-                {d.name || "-"} ({lat}, {lng})
+                {idx > 0 && <hr />}
+                <div className="timeline-start">
+                  <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold">
+                    {idx + 1}
+                  </div>
+                </div>
+                <div className="timeline-middle timeline-box">
+                  <p className="font-semibold">{d.name || "Unnamed Stop"}</p>
+                  <p className="text-sm text-gray-500">
+                    ({lat}, {lng})
+                  </p>
+                </div>
+                {idx < destinations.length - 1 && <hr />}
               </li>
             );
           })}
@@ -30,8 +43,9 @@ function DestinationsModal({ isOpen, onClose, destinations }) {
       ) : (
         <p>No destinations available.</p>
       )}
+
       <div className="mt-4 text-right">
-        <button className="btn btn-outline" onClick={onClose}>
+        <button className="btn btn-outline border-base-200" onClick={onClose}>
           Close
         </button>
       </div>
@@ -50,7 +64,7 @@ export default function MyTrips() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [filterDate, setFilterDate] = useState("");
-  const [sortOrder, setSortOrder] = useState("latest"); // "latest" | "oldest"
+  const [sortOrder, setSortOrder] = useState("latest");
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
@@ -94,9 +108,7 @@ export default function MyTrips() {
     filtered.sort((a, b) => {
       const dateA = new Date(a.start_time || a.date);
       const dateB = new Date(b.start_time || b.date);
-      return sortOrder === "latest"
-        ? dateB - dateA
-        : dateA - dateB;
+      return sortOrder === "latest" ? dateB - dateA : dateA - dateB;
     });
 
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -126,7 +138,7 @@ export default function MyTrips() {
       completed: "badge-success",
       active: "badge-info",
       pending: "badge-warning",
-      cancelled: "badge-error",
+      cancelled: "badge-error text-white",
     };
     return (
       <span className={`badge ${classes[status] || "badge-info"}`}>
@@ -135,7 +147,7 @@ export default function MyTrips() {
     );
   };
 
-  const columns = ["id", "date", "destination", "status"];
+  const columns = ["id", "date", "destination", "distance", "status"];
   const rows = filteredAndPaginatedTrips.paginated.map((t) => ({
     id: t.id,
     date: formatDateSafe(t.start_time || t.date),
@@ -143,6 +155,9 @@ export default function MyTrips() {
       t.destinations?.[t.destinations.length - 1]?.name ||
       t.destination ||
       "-",
+    distance: t.distance_travelled
+      ? `${t.distance_travelled.toFixed(2)} km`
+      : "-",
     status: getStatusBadge(t.status),
     tripObject: t,
   }));
@@ -152,14 +167,14 @@ export default function MyTrips() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <h1 className="text-3xl font-bold text-base-content mb-6">My Trips</h1>
 
-        <div className="bg-base-200 rounded-lg shadow-sm p-4 sm:p-6 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-base-100 rounded-lg shadow-sm p-4 sm:p-6 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="form-control">
             <label className="label">
               <span className="label-text">Search</span>
             </label>
             <input
               type="text"
-              placeholder="Search by destination, status, reason, or date..."
+              placeholder="Search..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -219,7 +234,7 @@ export default function MyTrips() {
           </div>
         </div>
 
-        <div className="bg-base-200 rounded-lg shadow-sm p-4 sm:p-6">
+        <div className="bg-base-100 rounded-lg shadow-sm p-4 sm:p-6">
           {loading ? (
             <div className="flex justify-center py-12">
               <span className="loading loading-spinner loading-lg text-primary"></span>
@@ -283,15 +298,15 @@ export default function MyTrips() {
                     Trip Information
                   </h3>
                   <p>
-                    <strong>Date:</strong>{" "}
+                    <strong>Date:</strong>{" "} <br />
                     {formatDateSafe(selectedTrip.start_time || selectedTrip.date)}
                   </p>
                   <p>
-                    <strong>Status:</strong>{" "}
+                    <strong>Status:</strong>{" "} <br />
                     {getStatusBadge(selectedTrip.status)}
                   </p>
                   <p>
-                    <strong>Reason:</strong>{" "}
+                    <strong>Reason:</strong>{" "} <br />
                     {selectedTrip.reason || "No reason provided"}
                   </p>
                 </div>
@@ -300,11 +315,17 @@ export default function MyTrips() {
                     Location & Vehicle
                   </h3>
                   <p>
-                    <strong>Vehicle:</strong>{" "}
+                    <strong>Vehicle:</strong>{" "} <br />
                     {selectedTrip.vehicle?.plate_number || "-"}
                   </p>
                   <p>
-                    <strong>Driver:</strong> {selectedTrip.driver?.name || "-"}
+                    <strong>Driver:</strong> <br /> {selectedTrip.driver?.name || "-"}
+                  </p>
+                  <p>
+                    <strong>Distance Travelled:</strong>{" "} <br />
+                    {selectedTrip.distance_travelled
+                      ? `${selectedTrip.distance_travelled.toFixed(2)} km`
+                      : "-"}
                   </p>
                 </div>
               </div>

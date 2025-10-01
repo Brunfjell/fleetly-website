@@ -30,7 +30,7 @@ export default function DataTable({ columns = [], data = [], actions = [] }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="overflow-x-auto">
-        <table className="table table-zebra w-full">
+        <table className="table w-full">
           <thead>
             <tr>
               {columns.map((col, idx) => (

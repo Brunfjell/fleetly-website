@@ -30,12 +30,12 @@ export default function IdleWatcher() {
   const seconds = secondsLeft % 60;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/40">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
       <div className="bg-white p-6 rounded-lg shadow-md text-center">
         <h2 className="text-lg font-bold mb-2">Are you still there?</h2>
         <p className="mb-4">You’ll be logged out in 2 minutes unless you confirm.</p>
 
-        <span className="countdown font-mono text-2xl">
+        <span className="countdown text-2xl">
           <span style={{ "--value": minutes }} aria-live="polite">
             {minutes}
           </span>

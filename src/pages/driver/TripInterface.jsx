@@ -77,7 +77,7 @@ export default function TripInterface() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="min-h-[80vh]">
+      <div className="min-h-[80vh] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <h1 className="text-3xl font-bold text-center md:text-left">
           My Assigned Trips
         </h1>

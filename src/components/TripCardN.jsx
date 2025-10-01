@@ -24,7 +24,7 @@ export default function TripCardN({ trip, startLabel = "Start", onStart, onCance
             </button>
           )}
           {onCancel && (
-            <button className="btn btn-sm btn-error" onClick={onCancel}>
+            <button className="btn btn-sm btn-error text-white" onClick={onCancel}>
               Cancel
             </button>
           )}

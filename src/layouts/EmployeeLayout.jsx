@@ -53,7 +53,7 @@ export default function EmployeeLayout() {
             </ul>
             <ThemeToggle />
             <button
-              className="btn btn-error btn-sm ml-2"
+              className="btn btn-error btn-sm ml-2 text-white"
               onClick={() => setShowLogoutModal(true)}
             >
               Logout
@@ -61,7 +61,7 @@ export default function EmployeeLayout() {
           </div>
         </div>
 
-        <main className="flex-1 overflow-y-auto bg-base-100">
+        <main className="flex-1 overflow-y-auto bg-base-200">
           <Outlet context={{ currentUserId: user?.id }} />
         </main>
       </div>
@@ -81,7 +81,7 @@ export default function EmployeeLayout() {
                 Cancel
               </button>
               <button
-                className="btn btn-error"
+                className="btn btn-error text-white"
                 onClick={() => {
                   setShowLogoutModal(false);
                   logout();

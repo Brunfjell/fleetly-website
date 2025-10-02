@@ -122,28 +122,28 @@ export default function Dashboard() {
               <h2 className="text-xl font-semibold text-base-content mb-4">Quick Actions</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <button
-                  className="btn btn-accent btn-outline"
+                  className="btn btn-accent"
                   onClick={() => navigate("/admin/vehicles")}
                 >
                   <FaCar className="w-4 h-4 mr-2" />
                   Manage Vehicles
                 </button>
                 <button
-                  className="btn btn-accent btn-outline"
+                  className="btn btn-accent"
                   onClick={() => navigate("/admin/trips")}
                 >
                   <FaRoute className="w-4 h-4 mr-2" />
                   View Trips
                 </button>
                 <button
-                  className="btn btn-accent btn-outline"
+                  className="btn btn-accent"
                   onClick={() => navigate("/admin/expenses")}
                 >
                   <FaMoneyBill className="w-4 h-4 mr-2" />
                   Review Expenses
                 </button>
                 <button
-                  className="btn btn-accent btn-outline"
+                  className="btn btn-accent"
                   onClick={() => navigate("/admin/employees")}
                 >
                   <FaUsers className="w-4 h-4 mr-2" />

@@ -11,7 +11,6 @@ export default function MyExpenses() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [startDate, setStartDate] = useState("");
@@ -265,7 +264,7 @@ export default function MyExpenses() {
                 )}
               </div>
               <div className="flex justify-between mt-4">
-                <button className="btn btn-error" onClick={handleDeleteProof} disabled={deleting}>{deleting ? "Deleting..." : "Delete Proof"}</button>
+                <button className="btn btn-error text-white" onClick={handleDeleteProof} disabled={deleting}>{deleting ? "Deleting..." : "Delete Proof"}</button>
                 <button className="btn btn-primary" onClick={() => { setViewModalOpen(false); openUploadModal(selectedExpense); }}>
                   <FaUpload className="w-4 h-4 mr-2"/>Replace Proof
                 </button>

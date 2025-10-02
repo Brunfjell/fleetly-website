@@ -163,7 +163,7 @@ export default function MyTrips() {
   }));
 
   return (
-    <div className="min-h-[80vh] bg-base-100">
+    <div className="min-h-[80vh] bg-base-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <h1 className="text-3xl font-bold text-base-content mb-6">My Trips</h1>
 

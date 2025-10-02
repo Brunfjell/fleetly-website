@@ -34,7 +34,7 @@ export default function AdminLayout() {
             </label>
             <ThemeToggle />
             <button
-              className="btn btn-ghost btn-sm ml-2"
+              className="btn btn-ghost btn-sm text-white ml-2"
               onClick={() => setShowLogoutModal(true)}
             >
               Logout
@@ -59,7 +59,7 @@ export default function AdminLayout() {
             </ul>
             <ThemeToggle />
             <button
-              className="btn btn-error btn-sm ml-2"
+              className="btn btn-error btn-sm text-white ml-2"
               onClick={() => setShowLogoutModal(true)}
             >
               Logout
@@ -87,7 +87,7 @@ export default function AdminLayout() {
                 Cancel
               </button>
               <button
-                className="btn btn-error"
+                className="btn btn-error text-white"
                 onClick={() => {
                   setShowLogoutModal(false);
                   logout();

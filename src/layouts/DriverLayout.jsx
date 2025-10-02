@@ -82,7 +82,7 @@ export default function DriverLayout() {
                   Cancel
                 </button>
                 <button
-                  className="btn btn-error"
+                  className="btn btn-error text-white"
                   onClick={() => {
                     setShowLogoutModal(false);
                     logout();

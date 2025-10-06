@@ -2,7 +2,6 @@ import { Outlet, NavLink } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { useAuth } from "../context/AuthContext";
 import IdleWatcher from "../components/IdleWatcher";
-import ThemeToggle from "../components/ThemeToggle";
 import { useState } from "react";
 import { FiMenu } from "react-icons/fi";
 import { ROLES } from "../utils/roleUtils";
@@ -32,7 +31,6 @@ export default function AdminLayout() {
             <label htmlFor="admin-drawer" className="btn btn-square btn-ghost">
               <FiMenu size={20} />
             </label>
-            <ThemeToggle />
             <button
               className="btn btn-ghost btn-sm text-white ml-2"
               onClick={() => setShowLogoutModal(true)}
@@ -57,7 +55,6 @@ export default function AdminLayout() {
                 </li>
               ))}
             </ul>
-            <ThemeToggle />
             <button
               className="btn btn-error btn-sm text-white ml-2"
               onClick={() => setShowLogoutModal(true)}
@@ -70,6 +67,7 @@ export default function AdminLayout() {
         <main className="flex-1 overflow-y-auto bg-base-100">
           <Outlet />
         </main>
+        <Footer />
       </div>
 
       <div className="drawer-side">
@@ -100,7 +98,6 @@ export default function AdminLayout() {
         </dialog>
       )}
     </div>
-    <Footer />
     <IdleWatcher />
     </>
   );

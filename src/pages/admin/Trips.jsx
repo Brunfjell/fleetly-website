@@ -1,7 +1,17 @@
 import { useEffect, useState, useMemo } from "react";
 import TripCard from "../../components/TripCard";
 import Modal from "../../components/Modal";
-import { FaSearch, FaExclamationTriangle, FaInfoCircle, FaMapMarkerAlt, FaRoute, FaUserFriends, FaCar, FaCalendarAlt, FaClock } from "react-icons/fa";
+import {
+  FaSearch,
+  FaExclamationTriangle,
+  FaInfoCircle,
+  FaMapMarkerAlt,
+  FaRoute,
+  FaUserFriends,
+  FaCar,
+  FaCalendarAlt,
+  FaClock,
+} from "react-icons/fa";
 import { getTrips, updateTripStatus } from "../../api/api";
 
 export default function Trips() {
@@ -14,8 +24,7 @@ export default function Trips() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [vehicleFilter, setVehicleFilter] = useState("");
-  const [startDateFilter, setStartDateFilter] = useState("");
-  const [endDateFilter, setEndDateFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [statusUpdating, setStatusUpdating] = useState(false);
 
@@ -42,43 +51,56 @@ export default function Trips() {
   const filteredAndPaginatedTrips = useMemo(() => {
     let filtered = trips;
 
-    // Search filter
     if (searchTerm) {
-      filtered = filtered.filter(trip =>
-        trip.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        trip.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        trip.vehicle?.plate_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        trip.driver?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        trip.requester?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        trip.status?.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (trip) =>
+          trip.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          trip.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          trip.vehicle?.plate_number
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          trip.driver?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          trip.requester?.name
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          trip.status?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    // Status filter
     if (statusFilter) {
-      filtered = filtered.filter(trip => trip.status === statusFilter);
+      filtered = filtered.filter((trip) => trip.status === statusFilter);
     }
 
-    // Vehicle filter
     if (vehicleFilter) {
-      filtered = filtered.filter(trip => trip.vehicle?.plate_number?.toLowerCase().includes(vehicleFilter.toLowerCase()));
+      filtered = filtered.filter((trip) =>
+        trip.vehicle?.plate_number
+          ?.toLowerCase()
+          .includes(vehicleFilter.toLowerCase())
+      );
     }
 
-    // Date filters
-    if (startDateFilter) {
-      filtered = filtered.filter(trip => trip.start_time && new Date(trip.start_time) >= new Date(startDateFilter));
-    }
-    if (endDateFilter) {
-      filtered = filtered.filter(trip => trip.start_time && new Date(trip.start_time) <= new Date(endDateFilter));
+    if (dateFilter) {
+      const selectedDate = new Date(dateFilter);
+      filtered = filtered.filter((trip) => {
+        if (!trip.start_time) return false;
+        const tripDate = new Date(trip.start_time);
+        return (
+          tripDate.getFullYear() === selectedDate.getFullYear() &&
+          tripDate.getMonth() === selectedDate.getMonth() &&
+          tripDate.getDate() === selectedDate.getDate()
+        );
+      });
     }
 
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
 
     return { filtered, paginated };
-  }, [trips, searchTerm, statusFilter, vehicleFilter, startDateFilter, endDateFilter, currentPage]);
+  }, [trips, searchTerm, statusFilter, vehicleFilter, dateFilter, currentPage]);
 
-  const totalPages = Math.ceil(filteredAndPaginatedTrips.filtered.length / itemsPerPage);
+  const totalPages = Math.ceil(
+    filteredAndPaginatedTrips.filtered.length / itemsPerPage
+  );
 
   const handleView = (trip) => {
     setSelectedTrip(trip);
@@ -97,7 +119,11 @@ export default function Trips() {
     setStatusUpdating(true);
     try {
       await updateTripStatus(selectedTrip.id, "approved");
-      setTrips(trips.map(t => t.id === selectedTrip.id ? { ...t, status: "approved" } : t));
+      setTrips(
+        trips.map((t) =>
+          t.id === selectedTrip.id ? { ...t, status: "approved" } : t
+        )
+      );
       setSelectedTrip({ ...selectedTrip, status: "approved" });
     } catch (err) {
       console.error("Failed to approve trip:", err);
@@ -112,8 +138,18 @@ export default function Trips() {
     setStatusUpdating(true);
     try {
       await updateTripStatus(selectedTrip.id, "cancelled", reason);
-      setTrips(trips.map(t => t.id === selectedTrip.id ? { ...t, status: "cancelled", deny_reason: reason } : t));
-      setSelectedTrip({ ...selectedTrip, status: "cancelled", deny_reason: reason });
+      setTrips(
+        trips.map((t) =>
+          t.id === selectedTrip.id
+            ? { ...t, status: "cancelled", deny_reason: reason }
+            : t
+        )
+      );
+      setSelectedTrip({
+        ...selectedTrip,
+        status: "cancelled",
+        deny_reason: reason,
+      });
     } catch (err) {
       console.error("Failed to deny trip:", err);
       alert("Failed to deny trip");
@@ -128,7 +164,8 @@ export default function Trips() {
     const maxVisiblePages = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
     let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-    if (endPage - startPage + 1 < maxVisiblePages) startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    if (endPage - startPage + 1 < maxVisiblePages)
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
 
     for (let i = startPage; i <= endPage; i++) {
       pages.push(
@@ -145,66 +182,75 @@ export default function Trips() {
     }
     return (
       <div className="join">
-        {currentPage > 1 && <button className="join-item btn btn-square" onClick={() => handlePageChange(currentPage - 1)}>«</button>}
+        {currentPage > 1 && (
+          <button
+            className="join-item btn btn-square"
+            onClick={() => handlePageChange(currentPage - 1)}
+          >
+            «
+          </button>
+        )}
         {pages}
-        {currentPage < totalPages && <button className="join-item btn btn-square" onClick={() => handlePageChange(currentPage + 1)}>»</button>}
+        {currentPage < totalPages && (
+          <button
+            className="join-item btn btn-square"
+            onClick={() => handlePageChange(currentPage + 1)}
+          >
+            »
+          </button>
+        )}
       </div>
     );
   };
 
-  const tripStats = useMemo(() => ({
-    total: trips.length,
-    requested: trips.filter(t => t.status === 'requested').length,
-    approved: trips.filter(t => t.status === 'approved').length,
-    active: trips.filter(t => t.status === 'in_progress').length,
-    completed: trips.filter(t => t.status === 'completed').length,
-    cancelled: trips.filter(t => t.status === 'cancelled').length,
-  }), [trips]);
+  const tripStats = useMemo(
+    () => ({
+      total: trips.length,
+      requested: trips.filter((t) => t.status === "requested").length,
+      approved: trips.filter((t) => t.status === "approved").length,
+      active: trips.filter((t) => t.status === "in_progress").length,
+      completed: trips.filter((t) => t.status === "completed").length,
+      cancelled: trips.filter((t) => t.status === "cancelled").length,
+    }),
+    [trips]
+  );
 
   return (
-    <div className="min-h-[80vh] bg-base-100">
+    <div className="min-h-[92vh] bg-base-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
           <h1 className="text-3xl font-bold text-base-content mb-4 sm:mb-0">
             Trip Management
           </h1>
         </div>
+
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-          <div className="stat bg-base-200 rounded-lg p-4 shadow-sm">
-            <div className="stat-figure text-primary"><FaRoute className="w-6 h-6" /></div>
-            <div className="stat-title">Total Trips</div>
-            <div className="stat-value text-secondary text-lg">{tripStats.total}</div>
-          </div>
-          <div className="stat bg-base-200 rounded-lg p-4 shadow-sm">
-            <div className="stat-figure text-primary"><FaClock className="w-6 h-6" /></div>
-            <div className="stat-title">Requested</div>
-            <div className="stat-value text-secondary text-lg">{tripStats.requested}</div>
-          </div>
-          <div className="stat bg-base-200 rounded-lg p-4 shadow-sm">
-            <div className="stat-figure text-primary"><FaCalendarAlt className="w-6 h-6" /></div>
-            <div className="stat-title">Approved</div>
-            <div className="stat-value text-secondary text-lg">{tripStats.approved}</div>
-          </div>
-          <div className="stat bg-base-200 rounded-lg p-4 shadow-sm">
-            <div className="stat-figure text-primary"><FaCar className="w-6 h-6" /></div>
-            <div className="stat-title">In Progress</div>
-            <div className="stat-value text-secondary text-lg">{tripStats.active}</div>
-          </div>
-          <div className="stat bg-base-200 rounded-lg p-4 shadow-sm">
-            <div className="stat-figure text-primary"><FaMapMarkerAlt className="w-6 h-6" /></div>
-            <div className="stat-title">Completed</div>
-            <div className="stat-value text-secondary text-lg">{tripStats.completed}</div>
-          </div>
-          <div className="stat bg-base-200 rounded-lg p-4 shadow-sm">
-            <div className="stat-figure text-primary"><FaUserFriends className="w-6 h-6" /></div>
-            <div className="stat-title">Cancelled</div>
-            <div className="stat-value text-secondary text-lg">{tripStats.cancelled}</div>
-          </div>
+          {[
+            { icon: FaRoute, label: "Total Trips", value: tripStats.total },
+            { icon: FaClock, label: "Requested", value: tripStats.requested },
+            { icon: FaCalendarAlt, label: "Approved", value: tripStats.approved },
+            { icon: FaCar, label: "In Progress", value: tripStats.active },
+            { icon: FaMapMarkerAlt, label: "Completed", value: tripStats.completed },
+            { icon: FaUserFriends, label: "Cancelled", value: tripStats.cancelled },
+          ].map(({ icon: Icon, label, value }) => (
+            <div
+              key={label}
+              className="stat bg-base-100 rounded-lg p-4 shadow-sm"
+            >
+              <div className="stat-figure text-primary">
+                <Icon className="w-6 h-6" />
+              </div>
+              <div className="stat-title">{label}</div>
+              <div className="stat-value text-secondary text-lg">{value}</div>
+            </div>
+          ))}
         </div>
 
-        <div className="bg-base-200 rounded-lg shadow-sm p-4 sm:p-6 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-base-100 rounded-lg shadow-sm p-4 sm:p-6 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="form-control">
-            <label className="label"><span className="label-text font-semibold">Search</span></label>
+            <label className="label">
+              <span className="label-text font-semibold">Search</span>
+            </label>
             <div className="relative">
               <FaSearch className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
               <input
@@ -218,21 +264,31 @@ export default function Trips() {
           </div>
 
           <div className="form-control">
-            <label className="label"><span className="label-text font-semibold">Vehicle</span></label>
+            <label className="label">
+              <span className="label-text font-semibold">Vehicle</span>
+            </label>
             <input
               type="text"
               placeholder="Plate number"
               value={vehicleFilter}
-              onChange={e => { setVehicleFilter(e.target.value); setCurrentPage(1); }}
+              onChange={(e) => {
+                setVehicleFilter(e.target.value);
+                setCurrentPage(1);
+              }}
               className="input input-bordered w-full focus:input-primary"
             />
           </div>
 
           <div className="form-control">
-            <label className="label"><span className="label-text font-semibold">Status</span></label>
+            <label className="label">
+              <span className="label-text font-semibold">Status</span>
+            </label>
             <select
               value={statusFilter}
-              onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1);
+              }}
               className="select select-bordered w-full focus:select-primary"
             >
               <option value="">All</option>
@@ -244,30 +300,29 @@ export default function Trips() {
             </select>
           </div>
 
-          <div className="flex gap-2">
-            <div className="form-control w-1/2">
-              <label className="label"><span className="label-text font-semibold">Start Date</span></label>
-              <input
-                type="date"
-                value={startDateFilter}
-                onChange={e => { setStartDateFilter(e.target.value); setCurrentPage(1); }}
-                className="input input-bordered w-full focus:input-primary"
-              />
-            </div>
-            <div className="form-control w-1/2">
-              <label className="label"><span className="label-text font-semibold">End Date</span></label>
-              <input
-                type="date"
-                value={endDateFilter}
-                onChange={e => { setEndDateFilter(e.target.value); setCurrentPage(1); }}
-                className="input input-bordered w-full focus:input-primary"
-              />
-            </div>
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text font-semibold">Date</span>
+            </label>
+            <input
+              type="date"
+              value={dateFilter}
+              onChange={(e) => {
+                setDateFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="input input-bordered w-full focus:input-primary"
+            />
           </div>
         </div>
 
-        <div className="bg-base-200 rounded-lg shadow-sm p-4 sm:p-6">
-          {error && <div className="alert alert-error mb-6 shadow-lg"><FaExclamationTriangle className="w-5 h-5" /><span>{error}</span></div>}
+        <div className="bg-base-100 rounded-lg shadow-sm p-4 sm:p-6 mb-10">
+          {error && (
+            <div className="alert alert-error mb-6 shadow-lg">
+              <FaExclamationTriangle className="w-5 h-5" />
+              <span>{error}</span>
+            </div>
+          )}
 
           {loading ? (
             <div className="flex justify-center py-12">
@@ -277,14 +332,18 @@ export default function Trips() {
             <div className="text-center py-12">
               <FaInfoCircle className="w-16 h-16 mx-auto text-gray-400 mb-4" />
               <p className="text-lg text-gray-600 font-medium mb-2">
-                {searchTerm || statusFilter || vehicleFilter || startDateFilter || endDateFilter
+                {searchTerm || statusFilter || vehicleFilter || dateFilter
                   ? "No trips match your filters"
                   : "No trips found"}
               </p>
               <button
                 className="btn btn-outline btn-sm"
                 onClick={() => {
-                  setSearchTerm(""); setStatusFilter(""); setVehicleFilter(""); setStartDateFilter(""); setEndDateFilter(""); setCurrentPage(1);
+                  setSearchTerm("");
+                  setStatusFilter("");
+                  setVehicleFilter("");
+                  setDateFilter("");
+                  setCurrentPage(1);
                 }}
               >
                 Clear Filters
@@ -293,16 +352,25 @@ export default function Trips() {
           ) : (
             <>
               <div className="mb-4 text-sm text-base-content opacity-70">
-                Showing {filteredAndPaginatedTrips.paginated.length} of {filteredAndPaginatedTrips.filtered.length} trips
+                Showing {filteredAndPaginatedTrips.paginated.length} of{" "}
+                {filteredAndPaginatedTrips.filtered.length} trips
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                {filteredAndPaginatedTrips.paginated.map(trip => (
-                  <TripCard key={trip.id} trip={trip} onView={() => handleView(trip)} />
+                {filteredAndPaginatedTrips.paginated.map((trip) => (
+                  <TripCard
+                    key={trip.id}
+                    trip={trip}
+                    onView={() => handleView(trip)}
+                  />
                 ))}
               </div>
 
-              {totalPages > 1 && <div className="flex justify-center mt-8">{renderPagination()}</div>}
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-8">
+                  {renderPagination()}
+                </div>
+              )}
             </>
           )}
         </div>
@@ -316,7 +384,7 @@ export default function Trips() {
           {selectedTrip && (
             <div className="flex flex-col lg:flex-row gap-6 max-h-[70vh] overflow-y-auto">
               <div className="flex-1 flex flex-col gap-6">
-                <section className="bg-base-200 p-4 rounded-lg">
+                <section className="pr-4">
                   <h3 className="font-bold text-lg mb-4 text-primary flex items-center gap-2">
                     <FaInfoCircle /> Trip Information
                   </h3>
@@ -365,7 +433,7 @@ export default function Trips() {
                   </div>
                 </section>
 
-                <section className="bg-base-200 p-4 rounded-lg">
+                <section className="pr-4">
                   <h3 className="font-bold text-lg mb-4 text-primary flex items-center gap-2">
                     <FaCar /> Vehicle Information
                   </h3>
@@ -392,7 +460,7 @@ export default function Trips() {
                   </div>
                 </section>
 
-                <section className="bg-base-200 p-4 rounded-lg">
+                <section className="pr-4">
                   <h3 className="font-bold text-lg mb-4 text-primary flex items-center gap-2">
                     <FaUserFriends /> People Involved
                   </h3>
@@ -417,7 +485,7 @@ export default function Trips() {
                 </section>
 
                 {selectedTrip.route_points?.length > 0 && (
-                  <section className="bg-base-200 p-4 rounded-lg">
+                  <section className="pr-4">
                     <h3 className="font-bold text-lg mb-4 text-primary flex items-center gap-2">
                       <FaMapMarkerAlt /> Route Points
                     </h3>

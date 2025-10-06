@@ -8,15 +8,14 @@ export default function Vehicles() {
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const [modalOpen, setModalOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [formValues, setFormValues] = useState({});
   const [saving, setSaving] = useState(false);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [yearFilter, setYearFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [duplicateWarning, setDuplicateWarning] = useState(false);
 
   const loadVehicles = async () => {
     setLoading(true);
@@ -36,33 +35,57 @@ export default function Vehicles() {
     }
   };
 
-  useEffect(() => { loadVehicles(); }, []);
+  useEffect(() => {
+    loadVehicles();
+  }, []);
 
   const filteredVehicles = useMemo(() => {
-    return vehicles.filter(v => {
+    return vehicles.filter((v) => {
       const matchesSearch =
         v.plate_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (v.make?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (v.model?.toLowerCase().includes(searchTerm.toLowerCase()));
-      const matchesYear = !yearFilter || v.year?.toString() === yearFilter.toString();
-      const matchesStatus = statusFilter === "all" || v.status === statusFilter;
+        v.make?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        v.model?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesYear =
+        !yearFilter || v.year?.toString() === yearFilter.toString();
+      const matchesStatus =
+        statusFilter === "all" || v.status === statusFilter;
       return matchesSearch && matchesYear && matchesStatus;
     });
   }, [vehicles, searchTerm, yearFilter, statusFilter]);
 
-  const handleAdd = () => { setEditingVehicle(null); setFormValues({}); setModalOpen(true); };
-  const handleEdit = (row) => {
-    const vehicle = vehicles.find(v => v.plate_number === row[0]);
-    if (vehicle) { setEditingVehicle(vehicle); setFormValues(vehicle); setModalOpen(true); }
+  const handleAdd = () => {
+    setEditingVehicle(null);
+    setFormValues({});
+    setDuplicateWarning(false);
+    setModalOpen(true);
   };
+
+  const handleEdit = (row) => {
+    const vehicle = vehicles.find((v) => v.plate_number === row[0]);
+    if (vehicle) {
+      setEditingVehicle(vehicle);
+      setFormValues(vehicle);
+      setDuplicateWarning(false);
+      setModalOpen(true);
+    }
+  };
+
   const handleDelete = async (row) => {
-    const vehicle = vehicles.find(v => v.plate_number === row[0]);
+    const vehicle = vehicles.find((v) => v.plate_number === row[0]);
     if (!vehicle) return;
-    if (!confirm(`Are you sure you want to delete vehicle ${vehicle.plate_number}? This action cannot be undone.`)) return;
+    if (
+      !confirm(
+        `Are you sure you want to delete vehicle ${vehicle.plate_number}? This action cannot be undone.`
+      )
+    )
+      return;
     try {
-      const { error } = await supabase.from("vehicles").delete().eq("id", vehicle.id);
+      const { error } = await supabase
+        .from("vehicles")
+        .delete()
+        .eq("id", vehicle.id);
       if (error) throw error;
-      setVehicles(prev => prev.filter(v => v.id !== vehicle.id));
+      setVehicles((prev) => prev.filter((v) => v.id !== vehicle.id));
     } catch (err) {
       console.error("Delete failed:", err.message);
       alert("Failed to delete vehicle.");
@@ -71,10 +94,24 @@ export default function Vehicles() {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    if (!editingVehicle) {
+      const duplicate = vehicles.some(
+        (v) =>
+          v.plate_number.toLowerCase() ===
+          formValues.plate_number?.toLowerCase()
+      );
+      if (duplicate) {
+        setDuplicateWarning(true);
+        return;
+      }
+    }
     setSaving(true);
     try {
       if (editingVehicle) {
-        const { error } = await supabase.from("vehicles").update(formValues).eq("id", editingVehicle.id);
+        const { error } = await supabase
+          .from("vehicles")
+          .update(formValues)
+          .eq("id", editingVehicle.id);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("vehicles").insert([formValues]);
@@ -92,60 +129,75 @@ export default function Vehicles() {
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
-    setFormValues(prev => ({ ...prev, [name]: type === "number" ? Number(value) : value }));
+    setFormValues((prev) => ({
+      ...prev,
+      [name]: type === "number" ? Number(value) : value,
+    }));
+    if (name === "plate_number") setDuplicateWarning(false);
   };
 
   return (
-    <div className="min-h-[80vh] bg-base-100">
+    <div className="min-h-[92vh] bg-base-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-          <h1 className="text-3xl font-bold text-base-content mb-4 sm:mb-0">Vehicle Fleet</h1>
-          <button className="btn btn-primary btn-lg shadow-md hover:shadow-lg transition-shadow" onClick={handleAdd}>
+          <h1 className="text-3xl font-bold text-base-content mb-4 sm:mb-0">
+            Vehicle Fleet
+          </h1>
+          <button
+            className="btn bg-green-500 hover:bg-green-600 text-white btn-lg shadow-md transition-all"
+            onClick={handleAdd}
+          >
             <FaPlus className="w-5 h-5 mr-2" /> Add Vehicle
           </button>
         </div>
 
-        <div className="flex flex-col md:flex-row md:items-end md:gap-4 mb-4 bg-base-200 p-4 rounded-lg">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between md:gap-4 mb-4 bg-base-100 p-4 sm:p-6 rounded-md shadow-sm">
           <div className="form-control w-full md:w-1/3">
-            <label className="label"><span className="label-text font-semibold">Search</span></label>
-            <div className="input-group">
-              <input
-                type="text"
-                placeholder="Plate, Make, Model..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="input input-bordered w-full focus:input-primary"
-              />
-            </div>
-          </div>
-
-          <div className="form-control w-full md:w-1/6">
-            <label className="label"><span className="label-text font-semibold">Year</span></label>
+            <label className="label">
+              <span className="label-text font-semibold">Search</span>
+            </label>
             <input
-              type="number"
-              placeholder="e.g., 2023"
-              value={yearFilter}
-              onChange={e => setYearFilter(e.target.value)}
+              type="text"
+              placeholder="Plate, Make, Model..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="input input-bordered w-full focus:input-primary"
             />
           </div>
 
-          <div className="form-control w-full md:w-1/6">
-            <label className="label"><span className="label-text font-semibold">Status</span></label>
-            <select
-              value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value)}
-              className="select select-bordered w-full focus:select-primary"
-            >
-              <option value="all">All</option>
-              <option value="active">Active</option>
-              <option value="maintenance">Maintenance</option>
-              <option value="inactive">Inactive</option>
-            </select>
+          <div className="flex flex-col md:flex-row md:items-end md:gap-4 w-full md:w-auto">
+            <div className="form-control w-full md:w-32">
+              <label className="label">
+                <span className="label-text font-semibold">Year</span>
+              </label>
+              <input
+                type="number"
+                placeholder="e.g., 2023"
+                value={yearFilter}
+                onChange={(e) => setYearFilter(e.target.value)}
+                className="input input-bordered w-full focus:input-primary"
+              />
+            </div>
+
+            <div className="form-control w-full md:w-32">
+              <label className="label">
+                <span className="label-text font-semibold">Status</span>
+              </label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="select select-bordered w-full focus:select-primary"
+              >
+                <option value="all">All</option>
+                <option value="active">Active</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div className="bg-base-200 rounded-lg shadow-sm p-4 sm:p-6">
+        <div className="bg-base-100 rounded-md shadow-sm p-6">
           {error && (
             <div className="alert alert-error mb-6 shadow-lg">
               <FaExclamationTriangle className="w-5 h-5" />
@@ -160,23 +212,59 @@ export default function Vehicles() {
           ) : filteredVehicles.length === 0 ? (
             <div className="text-center py-12">
               <FaCar className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-lg text-gray-600 font-medium mb-4">No vehicles found</p>
-              <button className="btn btn-primary" onClick={handleAdd}>Add Your First Vehicle</button>
+              <p className="text-lg text-gray-600 font-medium mb-4">
+                No vehicles found
+              </p>
+              <button
+                className="btn bg-green-500 hover:bg-green-600 text-white"
+                onClick={handleAdd}
+              >
+                <FaPlus className="w-4 h-4 mr-2" /> Add Your First Vehicle
+              </button>
             </div>
           ) : (
             <DataTable
-              columns={["Plate Number", "Make", "Model", "Year", "Status", "Odometer"]}
-              data={filteredVehicles.map(v => [
+              columns={[
+                "Plate Number",
+                "Make",
+                "Model",
+                "Year",
+                "Status",
+                "Mileage",
+              ]}
+              data={filteredVehicles.map((v) => [
                 v.plate_number,
                 v.make,
                 v.model,
                 v.year,
-                <span className={`badge ${v.status === "active" ? "badge-success" : v.status === "maintenance" ? "badge-warning" : "badge-error"}`}>{v.status}</span>,
-                v.odometer ? `${v.odometer.toLocaleString()} km` : "N/A"
+                <span
+                  className={`badge ${
+                    v.status === "active"
+                      ? "badge-success"
+                      : v.status === "maintenance"
+                      ? "badge-warning"
+                      : "badge-error"
+                  }`}
+                >
+                  {v.status}
+                </span>,
+                v.odometer ? `${v.odometer.toLocaleString()} km` : "N/A",
               ])}
               actions={[
-                { label: "Edit", className: "btn btn-sm btn-warning", onClick: handleEdit, icon: <FaEdit className="w-4 h-4 mr-1" /> },
-                { label: "Delete", className: "btn btn-sm btn-error", onClick: handleDelete, icon: <FaTrash className="w-4 h-4 mr-1" /> },
+                {
+                  label: "Edit",
+                  className:
+                    "btn btn-sm bg-blue-500 hover:bg-blue-600 text-white",
+                  onClick: handleEdit,
+                  icon: <FaEdit className="w-4 h-4 mr-1" />,
+                },
+                {
+                  label: "Delete",
+                  className:
+                    "btn btn-sm bg-red-500 hover:bg-red-600 text-white",
+                  onClick: handleDelete,
+                  icon: <FaTrash className="w-4 h-4 mr-1" />,
+                },
               ]}
             />
           )}
@@ -188,22 +276,79 @@ export default function Vehicles() {
           title={editingVehicle ? "Edit Vehicle" : "Add New Vehicle"}
           footer={
             <div className="flex gap-3 justify-end">
-              <button className="btn btn-outline" onClick={() => setModalOpen(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? <> <span className="loading loading-spinner loading-sm"></span> Saving... </> : (editingVehicle ? "Update Vehicle" : "Add Vehicle")}
+              <button
+                className="btn btn-outline border-base-300 text-base-content"
+                onClick={() => setModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className={`btn ${
+                  editingVehicle
+                    ? "bg-blue-500 hover:bg-blue-600"
+                    : "bg-green-500 hover:bg-green-600"
+                } text-white`}
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Saving...
+                  </>
+                ) : editingVehicle ? (
+                  "Update Vehicle"
+                ) : (
+                  "Add Vehicle"
+                )}
               </button>
             </div>
           }
         >
-          <form className="space-y-4">
+          <form
+            className="space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const plateExists = vehicles.some(
+                (v) =>
+                  v.plate_number.toLowerCase() ===
+                    formValues.plate_number?.toLowerCase() &&
+                  (!editingVehicle || v.id !== editingVehicle.id)
+              );
+              if (plateExists) {
+                alert("A vehicle with this plate number already exists.");
+                return;
+              }
+              handleSave(e);
+            }}
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="form-control">
-                <label className="label"><span className="label-text font-semibold">Plate Number *</span></label>
-                <input type="text" name="plate_number" placeholder="ABC-123" value={formValues.plate_number || ""} onChange={handleChange} className="input input-bordered w-full focus:input-primary" required />
+                <label className="label">
+                  <span className="label-text font-semibold">Plate Number *</span>
+                </label>
+                <input
+                  type="text"
+                  name="plate_number"
+                  placeholder="ABC-123"
+                  value={formValues.plate_number || ""}
+                  onChange={handleChange}
+                  className="input input-bordered w-full focus:input-primary"
+                  required
+                />
               </div>
+
               <div className="form-control">
-                <label className="label"><span className="label-text font-semibold">Status *</span></label>
-                <select name="status" value={formValues.status || ""} onChange={handleChange} className="select select-bordered w-full focus:select-primary" required>
+                <label className="label">
+                  <span className="label-text font-semibold">Status *</span>
+                </label>
+                <select
+                  name="status"
+                  value={formValues.status || ""}
+                  onChange={handleChange}
+                  className="select select-bordered w-full focus:select-primary"
+                  required
+                >
                   <option value="">Select Status</option>
                   <option value="active">Active</option>
                   <option value="maintenance">Maintenance</option>
@@ -212,31 +357,79 @@ export default function Vehicles() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="form-control">
-                <label className="label"><span className="label-text font-semibold">Make</span></label>
-                <input type="text" name="make" placeholder="Toyota" value={formValues.make || ""} onChange={handleChange} className="input input-bordered w-full focus:input-primary" />
-              </div>
-              <div className="form-control">
-                <label className="label"><span className="label-text font-semibold">Model</span></label>
-                <input type="text" name="model" placeholder="Camry" value={formValues.model || ""} onChange={handleChange} className="input input-bordered w-full focus:input-primary" />
-              </div>
-              <div className="form-control">
-                <label className="label"><span className="label-text font-semibold">Year</span></label>
-                <input type="number" name="year" placeholder="2023" min="1900" max="2100" value={formValues.year || ""} onChange={handleChange} className="input input-bordered w-full focus:input-primary" />
-              </div>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="form-control">
-                <label className="label"><span className="label-text font-semibold">Odometer (km)</span></label>
-                <input type="number" name="odometer" placeholder="15000" min="0" value={formValues.odometer || ""} onChange={handleChange} className="input input-bordered w-full focus:input-primary" />
+                <label className="label">
+                  <span className="label-text font-semibold">Make</span>
+                </label>
+                <input
+                  type="text"
+                  name="make"
+                  placeholder="Toyota"
+                  value={formValues.make || ""}
+                  onChange={handleChange}
+                  className="input input-bordered w-full focus:input-primary"
+                />
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">Model</span>
+                </label>
+                <input
+                  type="text"
+                  name="model"
+                  placeholder="Camry"
+                  value={formValues.model || ""}
+                  onChange={handleChange}
+                  className="input input-bordered w-full focus:input-primary"
+                />
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">Year</span>
+                </label>
+                <input
+                  type="number"
+                  name="year"
+                  placeholder="2023"
+                  min="1900"
+                  max="2100"
+                  value={formValues.year || ""}
+                  onChange={handleChange}
+                  className="input input-bordered w-full focus:input-primary"
+                />
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">Mileage (km)</span>
+                </label>
+                <input
+                  type="number"
+                  name="<odometer>"
+                  placeholder="15000"
+                  min="0"
+                  value={formValues.odometer || ""}
+                  onChange={handleChange}
+                  className="input input-bordered w-full focus:input-primary"
+                />
               </div>
             </div>
 
             <div className="form-control">
-              <label className="label"><span className="label-text font-semibold">Notes</span></label>
-              <textarea name="notes" placeholder="Additional notes about the vehicle..." value={formValues.notes || ""} onChange={handleChange} className="textarea textarea-bordered w-full focus:textarea-primary" rows={3} />
+              <label className="label">
+                <span className="label-text font-semibold">Notes</span>
+              </label>
+              <textarea
+                name="notes"
+                placeholder="Additional notes about the vehicle..."
+                value={formValues.notes || ""}
+                onChange={handleChange}
+                className="textarea textarea-bordered w-full focus:textarea-primary"
+                rows={3}
+              />
             </div>
           </form>
         </Modal>

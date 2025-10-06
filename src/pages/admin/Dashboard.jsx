@@ -47,7 +47,7 @@ export default function Dashboard() {
   }, []);
 
   const StatCard = ({ title, value, icon: Icon, color = "primary", subtitle }) => (
-    <div className="card bg-base-200 shadow-lg hover:shadow-xl transition-shadow duration-300">
+    <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow duration-300">
       <div className="card-body">
         <div className="flex items-center justify-between">
           <div>
@@ -64,7 +64,7 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="min-h-[91vh] bg-base-100">
+    <div className="min-h-[91vh] bg-base-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-base-content mb-2">Dashboard Overview</h1>
@@ -118,7 +118,7 @@ export default function Dashboard() {
               />
             </div>
 
-            <div className="bg-base-200 rounded-lg p-6 shadow-sm">
+            <div>
               <h2 className="text-xl font-semibold text-base-content mb-4">Quick Actions</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <button
